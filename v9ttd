@@ -86,10 +86,22 @@ class Track:
 # ------------------------------------------------------------------------
 class Tape:
 
+    track_names = [ '0', '1', '2', '3', '4', '5', '6', '7', 'P' ]
+
     # --------------------------------------------------------------------
     def __init__(self, filename, channels, downsample=1, bpl=0):
+
+        # map "natural" bit order (15..0) to 0..15 numbering for 16-bit LE input treated as bytes
+        chan_remap = [ 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8 ]
+
+        print("* Using channel:track mapping:", end="")
+        for t, c in enumerate(reversed(channels)):
+            print(" %i:%s" % (c, self.track_names[t]), end="")
+            if t != 8:
+                print(",", end="")
+        print("")
         print("* Opening tape image: %s with %i data channels..." % (filename, len(channels)))
-        samples_in = np.fromfile(filename, dtype=np.uint16)
+        samples_in = np.fromfile(filename, dtype=np.uint8)
         print("* Input data: %sB, %ssamples" % (unitize(samples_in.nbytes, base=1024), unitize(len(samples_in))))
         if downsample > 1:
             print("* Downsampling by %i = %ssamples" % (downsample, unitize(len(samples))))
@@ -104,14 +116,14 @@ class Tape:
             print("* WARNING: Estimated peak memory usage: %sB" % unitize(mem, base=1024))
 
         print("* Unpacking samples...")
-        bits = np.unpackbits(samples.view(np.uint8))
+        bits = np.unpackbits(samples)
 
         self.tracks = []
         self.bpl = 0
 
         for i, c in enumerate(channels):
-            print("* Slicing channel %i into track %i: " % (c, i), end="", flush=True)
-            t = Track(bits[c::16], i)
+            print("* Slicing channel %i into track %s: " % (c, self.track_names[i]), end="", flush=True)
+            t = Track(bits[chan_remap[c]::16], i)
             self.tracks.append(t)
             self.bpl += t.bpl
 
@@ -173,7 +185,7 @@ class ScannerPE:
 
     # --------------------------------------------------------------------
     def track_scan(self, track):
-        print("* Searching for PE preambles on track %i:" % (track.num), end="", flush=True)
+        print("* Searching for PE preambles on track %s:" % (Tape.track_names[track.num]), end="", flush=True)
 
         preambles = []
         pc = 0
@@ -194,11 +206,11 @@ class ScannerPE:
                 if pc > 50 and self.plong_min <= p <= self.plong_max:
                     preambles.append(start)
                     pc = 0
-                    print("\r* Searchin for PE preambles on track %i: %i%% (%i preambles found)" % (track.num, 100*i/len(track.pulse_lengths), len(preambles)), end="", flush=True)
+                    print("\r* Searchin for PE preambles on track %s: %i%% (%i preambles found)" % (Tape.track_names[track.num], 100*i/len(track.pulse_lengths), len(preambles)), end="", flush=True)
                 pc = 0
                 start = 0
     
-        print("\r* Found %i PE preambles on track %i                                                      " % (len(preambles), track.num))
+        print("\r* Found %i PE preambles on track %s                                                      " % (len(preambles), Tape.track_names[track.num]))
         return preambles
 
     # --------------------------------------------------------------------
@@ -216,7 +228,7 @@ class ScannerPE:
         for i, track in enumerate(self.tape.tracks):
             preambles = self.track_scan(track)
             if not preambles:
-                raise ValueError("No PE preambles found on track %i" % i)
+                raise ValueError("No PE preambles found on track %s" % (Tape.track_names[track.num]))
             self.track_preambles.append(preambles)
 
         print("* Checking PE preambles align...", end="", flush=True)
@@ -336,7 +348,7 @@ parser = argparse.ArgumentParser(description='Decode 9-track PE/NRZI tape image 
 parser.add_argument('-i', '--input', help="Input tape image", required=True)
 parser.add_argument('-o', '--output', help="Output file name or prefix", required=False)
 parser.add_argument('-O', '--otype', help="Output type", choices=['blocks', 'files', 'emimg', 'print'], required=False)
-parser.add_argument('-t', '--tracklist', help="Input track position list specified as: b0,b1,...,b8,parity (b0 is LSB)", required=True)
+parser.add_argument('-t', '--tracklist', help="Input track position list specified as: parity,b8,b7,...,b0 (b0 is LSB)", default="8,7,6,5,4,3,2,1,0", required=False)
 parser.add_argument('-d', '--downsample', help="Downsample input data by n > 1", type=int, default=0, required=False)
 parser.add_argument('-p', '--pulselen', help="Base pulse length (guessed if none specified)", type=int, required=False, default=0)
 parser.add_argument('-m', '--pulsemargin', help="Max allowed base pulse margin (0.0 - 0.5)", type=float, required=False, default=0.3)
