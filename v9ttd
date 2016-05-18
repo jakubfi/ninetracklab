@@ -5,9 +5,12 @@ import sys
 import datetime
 import argparse
 import numpy as np
+
+matplotlib = 1
 try:
     import matplotlib.pyplot as plt
 except:
+    matplotlib = 0
     print("* Warning: can't use matplotlib, graphical statistics are unavailable")
 
 # ------------------------------------------------------------------------
@@ -46,15 +49,21 @@ class Track:
         print("(edges...", end="", flush=True)
         # offsets in a bitstream where signal switches polarity
         edges = np.where(bits[:-1] != bits[1:])[0]
+        if len(edges) <= 0:
+            print("")
+            raise ValueError("No signal edges found on track %s" % num)
         print("\b\b\b, pulses...", end="", flush=True)
         # pulse lengths (to the next polarity switch)
         self.lens = edges[1:] - edges[:-1]
+        if len(self.lens) <= 0:
+            print("")
+            raise ValueError("No pulse lengths found on track %s" % num)
         del edges
-        if not self.lens.any():
-            return None
         self.hist, self.hedges = np.histogram(self.lens, bins=np.arange(0, Track.HIST_BINS, 1))
         self.pulselen = self.hedges[np.where(self.hist==self.hist.max())[0]][0]
         print("\b\b\b, histogram). Base pulse length is %i samples" % self.pulselen)
+        if self.pulselen <= 0:
+            raise ValueError("Cannot determine base pulse length for track %s" % num)
        
     # --------------------------------------------------------------------
     def print_stats(self):
@@ -71,11 +80,17 @@ class Track:
 class Tape:
 
     # --------------------------------------------------------------------
-    def __init__(self, filename, channels):
-        print("* Opening tape image: %s with %i data channels..." % (filename, len(channels)), end="", flush=True)
-        samples = np.fromfile(filename, dtype=np.uint16)
-        #samples = np.array(samples1[0::10], dtype=np.uint16)
-        print("\b\b\b: %sB, %ssamples" % (unitize(samples.nbytes, base=1024), unitize(len(samples))))
+    def __init__(self, filename, channels, downsample=1):
+        print("* Opening tape image: %s with %i data channels..." % (filename, len(channels)))
+        samples_in = np.fromfile(filename, dtype=np.uint16)
+        print("* Input data: %sB, %ssamples" % (unitize(samples_in.nbytes, base=1024), unitize(len(samples_in))))
+        if downsample > 1:
+            print("* Downsampling by %i = %ssamples" % (downsample, unitize(len(samples))))
+            samples = np.array(samples_in[0::downsample], dtype=np.uint16)
+        else:
+            samples = samples_in
+        if len(samples_in) == 0 or len(samples) == 0:
+            raise ValueError("No samples to process")
         mem = self.mem_estimate(len(samples), len(channels))
         if mem > 1024**3:
             print("* WARNING: Estimated peak memory usage: %sB" % unitize(mem, base=1024))
@@ -92,8 +107,10 @@ class Tape:
 
         self.pulselen = int(np.round(self.pulselen/len(channels)))
 
-        del samples
         del bits
+        del samples
+        del samples_in
+
         print("* Tape base pulse length: %i samples" % self.pulselen)
         print("* Tape is now ready to roll!")
         
@@ -172,13 +189,11 @@ class ScannerPE:
     # --------------------------------------------------------------------
     def scan(self):
         print("* Searching for PE preambles (max pulse variation: %f of base pulse length)" % args.pulsemargin)
-        for track in self.tape.tracks:
+        for i, track in enumerate(self.tape.tracks):
             preambles = self.track_scan(track)
+            if not preambles:
+                raise ValueError("No PE preambles found on track %i" % (i))
             self.track_preambles.append(preambles)
-
-        if len(self.track_preambles) <= 0:
-            print("* No PE preambles found")
-            return False
 
         print("* Checking PE preambles align (max track skew: %f of base pulse length)..." % (args.skew), end="", flush=True)
         self.preambles = np.array(self.track_preambles).T
@@ -186,8 +201,8 @@ class ScannerPE:
         for i, p in enumerate(self.preambles):
             diff = p.max() - p.min()
             if diff > max_skew:
-                print("\b\b\b: Failed! Preample %i has a skew of %i, while max allowed is %i" % (i, diff, max_skew))
-                return False
+                print("")
+                raise ValueError("Preamble %i has a skew of %i, while max allowed is %i" % (i, diff, max_skew))
 
         print("\b\b\b: OK!")
         return True
@@ -235,12 +250,12 @@ class ScannerPE:
         # analyze each row of a block
         # nextp is an array of pulse indices for the next row
         # row is the data
-        while region not in [R_FAILED, R_OK]:
+        while region not in [ R_FAILED, R_OK ]:
             data, nextp = self.row_get(nextp)
             if region == R_PREAMBLE:
                 if data == 0:
                     p0_count += 1
-                if data == 0b111111111:
+                elif data == 0b111111111:
                     if p0_count >= 25:
                         region = R_DATA
                     else:
@@ -251,14 +266,17 @@ class ScannerPE:
                 if data == 0b111111111: # possible start of postamble
                     maybe_postamble = 1
                     p0_count = 0
-                elif (data == 0) and maybe_postamble:
+                elif data == 0 and maybe_postamble:
                     p0_count += 1
                     if p0_count >= 25:
                         region = R_OK
                 else:
                     maybe_postamble = 0
 
-        return block[:-(p0_count+1)]
+        if region == R_FAILED:
+            return None
+        else:
+            return block[:-(p0_count+1)]
 
     # --------------------------------------------------------------------
     def analyze(self):
@@ -275,7 +293,7 @@ class ScannerPE:
 
 # ------------------------------------------------------------------------
 def eerr(s):
-    print("Error: %s" % s)
+    print("* FATAL: %s" % s)
     sys.exit(1)
 
 # ------------------------------------------------------------------------
@@ -289,6 +307,7 @@ parser.add_argument('-i', '--input', help="Input tape image", required=True)
 parser.add_argument('-o', '--output', help="Output file name or prefix", required=False)
 parser.add_argument('-O', '--otype', help="Output type", choices=['blocks', 'files', 'emimg', 'print'], required=False)
 parser.add_argument('-t', '--tracklist', help="Input track position list specified as: b0,b1,...,b8,parity (b0 is LSB)", required=True)
+parser.add_argument('-d', '--downsample', help="Downsample input data by n > 1", type=int, default=0, required=False)
 parser.add_argument('-p', '--pulselen', help="Base pulse length (guessed if none specified)", type=int, required=False, default=0)
 parser.add_argument('-m', '--pulsemargin', help="Max allowed base pulse margin (0.0 - 0.5)", type=float, required=False, default=0.3)
 parser.add_argument('-s', '--skew', help="Max allowed track skew (0.0 - 0.5)", type=float, required=False, default=0.1)
@@ -306,12 +325,17 @@ if not 0.0 < args.skew < 0.5:
     eerr("Track skew must be between 0.0 and 0.5")
 if not 0.0 < args.pulsemargin < 0.5:
     eerr("Pulse length margin must be between 0.0 and 0.5")
+if args.downsample != 0 and args.downsample <= 1:
+    eerr("Downsample should be an integer number > 1")
 
 # start tape analysis
 
 t_start = datetime.datetime.now()
 
-tape = Tape(args.input, tracklist)
+try:
+    tape = Tape(args.input, tracklist, downsample = args.downsample)
+except Exception as e:
+    eerr("Tape open failed (%s)" % e)
 
 # print stats and exit
 
@@ -319,14 +343,18 @@ if args.stats:
     tape.print_stats()
     exit(0)
 if args.gstats:
+    if matplotlib == 0:
+        eerr("Matplotlib unavailable, can't graph")
     tape.graph_stats()
     exit(0)
 
 # PE scan
-pe = ScannerPE(tape)
-pe.scan()
-pe.analyze()
-
+try:
+    pe = ScannerPE(tape)
+    pe.scan()
+    pe.analyze()
+except Exception as e:
+    eerr("PE analysis failed (%s)" % e)
 
 t_end = datetime.datetime.now()
 print("* Total analysis time: %s" % (t_end-t_start))
