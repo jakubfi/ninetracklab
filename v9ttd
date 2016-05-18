@@ -11,7 +11,7 @@ try:
     import matplotlib.pyplot as plt
 except:
     matplotlib = 0
-    print("* Warning: can't use matplotlib, graphical statistics are unavailable")
+    print("* WARNING: can't use matplotlib, graphical statistics are unavailable")
 
 # ------------------------------------------------------------------------
 # oh for fuck's sake...
@@ -48,39 +48,38 @@ class Track:
         self.num = num
         print("(edges...", end="", flush=True)
         # offsets in a bitstream where signal switches polarity
-        edges = np.where(bits[:-1] != bits[1:])[0]
-        if len(edges) <= 0:
+        self.pulse_offsets = np.where(bits[:-1] != bits[1:])[0]
+        if len(self.pulse_offsets) <= 0:
             print("")
             raise ValueError("No signal edges found on track %s" % num)
-        print("\b\b\b, pulses...", end="", flush=True)
+        print("\b\b\b, lengths...", end="", flush=True)
         # pulse lengths (to the next polarity switch)
-        self.lens = edges[1:] - edges[:-1]
-        if len(self.lens) <= 0:
+        self.pulse_lengths = self.pulse_offsets[1:] - self.pulse_offsets[:-1]
+        if len(self.pulse_lengths) <= 0:
             print("")
             raise ValueError("No pulse lengths found on track %s" % num)
-        del edges
-        self.hist, self.hedges = np.histogram(self.lens, bins=np.arange(0, Track.HIST_BINS, 1))
-        self.pulselen = self.hedges[np.where(self.hist==self.hist.max())[0]][0]
-        print("\b\b\b, histogram). Base pulse length is %i samples" % self.pulselen)
-        if self.pulselen <= 0:
+        self.hist, self.hedges = np.histogram(self.pulse_lengths, bins=np.arange(0, Track.HIST_BINS, 1))
+        self.bpl = self.hedges[np.where(self.hist == self.hist.max())[0]][0]
+        print("\b\b\b, histogram). Base pulse length is %i samples" % self.bpl)
+        if self.bpl <= 0:
             raise ValueError("Cannot determine base pulse length for track %s" % num)
        
     # --------------------------------------------------------------------
     def print_stats(self):
         print("* Track %i statistics:" % self.num)
         screen_width = int(os.popen('stty size', 'r').read().split()[1])
-        print("  * Most frequent pulse: %i samples" % self.pulselen)
+        print("  * Most frequent pulse: %i samples" % self.bpl)
         print("  * Pulse length histogram (pulse len : scaled pulse count):")
         for i, e in enumerate(self.hedges):
             if (self.hist[i-1]) > 0:
-                print("    %3i : %s" % (e, "#" * np.ceil((screen_width-14) * self.hist[i]/self.hist.max())))
+                print("    %3i : %s" % (e, "#" * np.ceil((screen_width-14) * self.hist[i] / self.hist.max())))
     
 
 # ------------------------------------------------------------------------
 class Tape:
 
     # --------------------------------------------------------------------
-    def __init__(self, filename, channels, downsample=1):
+    def __init__(self, filename, channels, downsample=1, bpl=0):
         print("* Opening tape image: %s with %i data channels..." % (filename, len(channels)))
         samples_in = np.fromfile(filename, dtype=np.uint16)
         print("* Input data: %sB, %ssamples" % (unitize(samples_in.nbytes, base=1024), unitize(len(samples_in))))
@@ -91,27 +90,34 @@ class Tape:
             samples = samples_in
         if len(samples_in) == 0 or len(samples) == 0:
             raise ValueError("No samples to process")
+
         mem = self.mem_estimate(len(samples), len(channels))
         if mem > 1024**3:
             print("* WARNING: Estimated peak memory usage: %sB" % unitize(mem, base=1024))
+
         print("* Unpacking samples...")
         bits = np.unpackbits(samples.view(np.uint8))
+
         self.tracks = []
-        self.pulselen = 0
+        self.bpl = 0
 
         for i, c in enumerate(channels):
             print("* Slicing channel %i into track %i: " % (c, i), end="", flush=True)
             t = Track(bits[c::16], i)
             self.tracks.append(t)
-            self.pulselen += t.pulselen
+            self.bpl += t.bpl
 
-        self.pulselen = int(np.round(self.pulselen/len(channels)))
+        if bpl > 0:
+            self.bpl = bpl
+            print("* Using user-provided base pulse length of %i samples" % self.bpl)
+        else:
+            self.bpl = int(np.round(self.bpl / len(channels)))
+            print("* Using base pulse length of %i samples" % self.bpl)
 
         del bits
         del samples
         del samples_in
 
-        print("* Tape base pulse length: %i samples" % self.pulselen)
         print("* Tape is now ready to roll!")
         
     # --------------------------------------------------------------------
@@ -130,10 +136,10 @@ class Tape:
     # --------------------------------------------------------------------
     def graph_stats(self):
         minlen = 0
-        maxlen = np.max([t.lens.max() for t in self.tracks])
-        plt.hist([t.lens for t in self.tracks], np.arange(minlen, maxlen, 1), orientation='vertical', histtype='stepfilled', log=False, stacked=True, edgecolor = "none")
+        maxlen = np.max([t.pulse_lengths.max() for t in self.tracks])
+        plt.hist([t.pulse_lengths for t in self.tracks], np.arange(minlen, maxlen, 1), orientation='vertical', histtype='stepfilled', log=False, stacked=True, edgecolor = "none")
         plt.grid(True)
-        plt.xticks(np.arange(minlen, maxlen, int((maxlen-minlen)/30)))
+        plt.xticks(np.arange(minlen, maxlen, int((maxlen - minlen) / 30)))
         plt.title("Pulse lengths histogram (all tracks)")
         plt.ylabel("Count")
         plt.xlabel("Pulse width [samples]")
@@ -147,21 +153,23 @@ class ScannerPE:
         self.tape = tape
         self.track_preambles = []
         self.preambles = None
-        self.p_delta = int(np.round(args.pulsemargin * tape.pulselen))
-        self.pshort_max = tape.pulselen + self.p_delta
-        self.pshort_min = tape.pulselen - self.p_delta
-        self.plong_max = 2 * self.pshort_max
+        self.p_delta = int(np.round(args.pulsemargin * tape.bpl))
+        self.pshort_min = tape.bpl - self.p_delta
+        self.pshort_max = tape.bpl + self.p_delta
         self.plong_min = 2 * self.pshort_min
+        self.plong_max = 2 * self.pshort_max
         self.row = np.zeros(16, dtype=np.uint8)
         self.blocks = []
+        self.max_skew = args.skew * self.tape.bpl
+        print("* PE scaner initialized with: bpl=%i, margin=%f (%i), short=[%i..%i], long=[%i..%i], skew=%f (%i)" % (tape.bpl, args.pulsemargin, self.p_delta, self.pshort_min, self.pshort_max, self.plong_min, self.plong_max, args.skew, self.max_skew))
 
     # --------------------------------------------------------------------
     def track_scan(self, track):
-        print("* Searchin for PE preambles on track %i:" % (track.num), end="", flush=True)
+        print("* Searching for PE preambles on track %i:" % (track.num), end="", flush=True)
 
         preambles = []
         pc = 0
-        for i, p in enumerate(track.lens):
+        for i, p in enumerate(track.pulse_lengths):
             # found correct pulse width
             if self.pshort_min <= p <= self.pshort_max:
                 # this is the first pulse in a burst
@@ -173,13 +181,12 @@ class ScannerPE:
             else:
                 # TODO: allow for missing pulses
 
-
                 # got something this far
                 # (25 x "0" = 50 pulses = minimum specified by the protocol)
                 if pc > 50 and self.plong_min <= p <= self.plong_max:
                     preambles.append(start)
                     pc = 0
-                    print("\r* Searchin for PE preambles on track %i: %i%% (%i preambles found)" % (track.num, 100*i/len(track.lens), len(preambles)), end="", flush=True)
+                    print("\r* Searchin for PE preambles on track %i: %i%% (%i preambles found)" % (track.num, 100*i/len(track.pulse_lengths), len(preambles)), end="", flush=True)
                 pc = 0
                 start = 0
     
@@ -187,20 +194,28 @@ class ScannerPE:
         return preambles
 
     # --------------------------------------------------------------------
+    def skew_check(self, pulse_ids):
+        # find pulse offsets for all pulse ids on all tracks
+        pulse_offsets = np.array([self.tape.tracks[x].pulse_offsets[pulse_ids[x]] for x in np.arange(len(pulse_ids))])
+        diff = pulse_offsets.max() - pulse_offsets.min()
+        if diff > self.max_skew:
+            return False, diff
+        return True, diff
+
+    # --------------------------------------------------------------------
     def scan(self):
-        print("* Searching for PE preambles (max pulse variation: %f of base pulse length)" % args.pulsemargin)
+        print("* Searching for PE preambles")
         for i, track in enumerate(self.tape.tracks):
             preambles = self.track_scan(track)
             if not preambles:
-                raise ValueError("No PE preambles found on track %i" % (i))
+                raise ValueError("No PE preambles found on track %i" % i)
             self.track_preambles.append(preambles)
 
-        print("* Checking PE preambles align (max track skew: %f of base pulse length)..." % (args.skew), end="", flush=True)
+        print("* Checking PE preambles align...", end="", flush=True)
         self.preambles = np.array(self.track_preambles).T
-        max_skew = args.skew * self.tape.pulselen
         for i, p in enumerate(self.preambles):
-            diff = p.max() - p.min()
-            if diff > max_skew:
+            skew_ok, diff = self.skew_check(p)
+            if not skew_ok:
                 print("")
                 raise ValueError("Preamble %i has a skew of %i, while max allowed is %i" % (i, diff, max_skew))
 
@@ -218,16 +233,18 @@ class ScannerPE:
             # put the bit in
             data |= self.row[t] << t
             # ...get the pulse len
-            plen = self.tape.tracks[t].lens[pn]
+            plen = self.tape.tracks[t].pulse_lengths[pn]
             # if it's a short pulse, skip it to align to the next bit pulse
             # this also means next bit has the same value as current
             if self.pshort_min <= plen <= self.pshort_max:
-                nextp.append(pn+2)
+                nextp.append(pn + 2)
             # if this is a long pulse, that means polarity changes
             # and that means next bit value changes (flip self.row)
-            else:
+            elif self.plong_min <= plen <= self.plong_max:
                 self.row[t] ^= 1
-                nextp.append(pn+1)
+                nextp.append(pn + 1)
+            else:
+                raise ValueError("Incorrect pulse length")
         return data, nextp
 
     # --------------------------------------------------------------------
@@ -237,8 +254,8 @@ class ScannerPE:
         nextp = p
 
         # block regions
-        R_PREAMBLE = 0
-        R_DATA = 1
+        R_PREAMBLE = 1
+        R_DATA = 2
         R_FAILED = 666
         R_OK = 777
 
@@ -251,7 +268,9 @@ class ScannerPE:
         # nextp is an array of pulse indices for the next row
         # row is the data
         while region not in [ R_FAILED, R_OK ]:
+
             data, nextp = self.row_get(nextp)
+
             if region == R_PREAMBLE:
                 if data == 0:
                     p0_count += 1
@@ -280,14 +299,17 @@ class ScannerPE:
 
     # --------------------------------------------------------------------
     def analyze(self):
-        # p is an array of n pulse indices in tape.track[0...n-1].lens
+        # p is an array of n pulse indices in tape.track[0...n-1].pulse_lengths
         # each p denotes start of a PE block
         # iterate over all block preambles
         print("* Reading PE blocks:", end="", flush=True)
         for i, p in enumerate(self.preambles):
-            block = self.block_read(p)
-            self.blocks.append(block)
-            print("\r* Reading PE blocks: %i%% (%i blocks)" % (i*100/len(self.preambles), len(self.blocks)), end="", flush=True)
+            try:
+                block = self.block_read(p)
+                self.blocks.append(block)
+            except Exception as e:
+                print("\n* WARNING: could not read block %i (%s)" % (i, e))
+            print("\r* Reading PE blocks: %i%% (%i blocks)" % (i*100 / len(self.preambles), len(self.blocks)), end="", flush=True)
         print("\r* Got %i PE blocks                    " % (len(self.blocks)))
 
 
@@ -326,14 +348,16 @@ if not 0.0 < args.skew < 0.5:
 if not 0.0 < args.pulsemargin < 0.5:
     eerr("Pulse length margin must be between 0.0 and 0.5")
 if args.downsample != 0 and args.downsample <= 1:
-    eerr("Downsample should be an integer number > 1")
+    eerr("Downsample must be an integer number > 1")
+if args.pulselen < 0:
+    eerr("Base pulse length must be an integer number > 1")
 
 # start tape analysis
 
 t_start = datetime.datetime.now()
 
 try:
-    tape = Tape(args.input, tracklist, downsample = args.downsample)
+    tape = Tape(args.input, tracklist, downsample=args.downsample, bpl=args.pulselen)
 except Exception as e:
     eerr("Tape open failed (%s)" % e)
 
