@@ -54,18 +54,21 @@ class Track:
     # --------------------------------------------------------------------
     def __init__(self, bits, num):
         self.num = num
+
         print("(edges...", end="", flush=True)
         # offsets in a bitstream where signal switches polarity
         self.pulse_offsets = np.where(bits[:-1] != bits[1:])[0]
         if len(self.pulse_offsets) <= 0:
             print("")
             raise ValueError("No signal edges found on track %s" % num)
+
         print("\b\b\b, lengths...", end="", flush=True)
         # pulse lengths (to the next polarity switch)
         self.pulse_lengths = self.pulse_offsets[1:] - self.pulse_offsets[:-1]
         if len(self.pulse_lengths) <= 0:
             print("")
             raise ValueError("No pulse lengths found on track %s" % num)
+
         self.hist, self.hedges = np.histogram(self.pulse_lengths, bins=np.arange(0, Track.HIST_BINS, 1))
         self.bpl = self.hedges[np.where(self.hist == self.hist.max())[0]][0]
         print("\b\b\b, histogram). Base pulse length is %i samples" % self.bpl)
@@ -100,27 +103,23 @@ class Tape:
             if t != 8:
                 print(",", end="")
         print("")
+
         print("* Opening tape image: %s with %i data channels..." % (filename, len(channels)))
-        samples_in = np.fromfile(filename, dtype=np.uint8)
-        print("* Input data: %sB, %ssamples" % (unitize(samples_in.nbytes, base=1024), unitize(len(samples_in))))
+        samples = np.fromfile(filename, dtype=np.uint16)
+        print("* Input data: %sB, %ssamples" % (unitize(samples.nbytes, base=1024), unitize(len(samples))))
         if downsample > 1:
-            print("* Downsampling by %i = %ssamples" % (downsample, unitize(len(samples))))
-            samples = np.array(samples_in[0::downsample], dtype=np.uint16)
-        else:
-            samples = samples_in
-        if len(samples_in) == 0 or len(samples) == 0:
+            print("* Downsampling by %i to  %ssamples" % (downsample, unitize(len(samples)/downsample)))
+            samples = np.array(samples[0::downsample], dtype=np.uint16)
+        if len(samples) == 0:
             raise ValueError("No samples to process")
 
         mem = self.mem_estimate(len(samples), len(channels))
-        if mem > 1024**3:
-            print("* WARNING: Estimated peak memory usage: %sB" % unitize(mem, base=1024))
+        print("* Estimated peak memory usage: %sB" % unitize(mem, base=1024))
 
         print("* Unpacking samples...")
-        bits = np.unpackbits(samples)
-
+        bits = np.unpackbits(samples.view(dtype=np.uint8))
         self.tracks = []
         self.bpl = 0
-
         for i, c in enumerate(channels):
             print("* Slicing channel %i into track %s: " % (c, self.track_names[i]), end="", flush=True)
             t = Track(bits[chan_remap[c]::16], i)
@@ -136,16 +135,19 @@ class Tape:
 
         del bits
         del samples
-        del samples_in
 
         print("* Tape is now ready to roll!")
         
     # --------------------------------------------------------------------
-    def mem_estimate(self, sample_count, channel_count):
-        TRACK_TO_SAMPLES_SCALE = 4
+    def mem_estimate(self, sample_count, track_count):
+        TRACK_FILL = 1.0 / 20 # samples to edges ratio
+        bits_per_track = 16 * sample_count/16 # 16 bits per sample, 16 tracks in sample_count
+        bytes_per_track = TRACK_FILL * bits_per_track * 2 * 8 # 2 structures, 8 bytes per cell
+
         mem_samples = sample_count * 2
         mem_bits = mem_samples * 8
-        mem_tracks = channel_count * sample_count/16 * TRACK_TO_SAMPLES_SCALE
+        mem_tracks = track_count * bytes_per_track
+
         return mem_samples + mem_bits + mem_tracks
 
     # --------------------------------------------------------------------
@@ -344,11 +346,11 @@ def eerr(s):
 
 # parse and prepare arguments
 
-parser = argparse.ArgumentParser(description='Decode 9-track PE/NRZI tape image dumps')
+parser = argparse.ArgumentParser(description='Virtual 9-Track Tape Drive')
 parser.add_argument('-i', '--input', help="Input tape image", required=True)
 parser.add_argument('-o', '--output', help="Output file name or prefix", required=False)
 parser.add_argument('-O', '--otype', help="Output type", choices=['blocks', 'files', 'emimg', 'print'], required=False)
-parser.add_argument('-t', '--tracklist', help="Input track position list specified as: parity,b8,b7,...,b0 (b0 is LSB)", default="8,7,6,5,4,3,2,1,0", required=False)
+parser.add_argument('-c', '--chlist', help="Input channel position list specified as: P,7,6,5,4,3,2,1,0 (P=parity, 0=LSB). Default is: 8,7,6,5,4,3,2,1,0", default="8,7,6,5,4,3,2,1,0", required=False)
 parser.add_argument('-d', '--downsample', help="Downsample input data by n > 1", type=int, default=0, required=False)
 parser.add_argument('-p', '--pulselen', help="Base pulse length (guessed if none specified)", type=int, required=False, default=0)
 parser.add_argument('-m', '--pulsemargin', help="Max allowed base pulse margin (0.0 - 0.5)", type=float, required=False, default=0.3)
@@ -357,10 +359,10 @@ parser.add_argument('-S', '--stats', help="Print track stats and exit", action='
 parser.add_argument('-G', '--gstats', help="Draw track stats and exit", action='store_true', required=False)
 args = parser.parse_args()
 
-tracklist = [int(i) for i in args.tracklist.split(',')]
-if len(tracklist) != 9:
-    eerr("Need 9 tracks in -t tracklist")
-if np.min(tracklist) < 0 or np.max(tracklist) > 15:
+chlist = [int(i) for i in args.chlist.split(',')]
+if len(chlist) != 9:
+    eerr("Need 9 channels in -c chlist")
+if np.min(chlist) < 0 or np.max(chlist) > 15:
     eerr("Track indices must be between 0 and 15")
     sys.exit(1)
 if not 0.0 < args.skew < 0.5:
@@ -377,7 +379,7 @@ if args.pulselen < 0:
 t_start = datetime.datetime.now()
 
 try:
-    tape = Tape(args.input, tracklist, downsample=args.downsample, bpl=args.pulselen)
+    tape = Tape(args.input, chlist, downsample=args.downsample, bpl=args.pulselen)
 except Exception as e:
     eerr("Tape open failed (%s)" % e)
 
