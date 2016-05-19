@@ -90,7 +90,7 @@ class Track:
 
         self.hist, self.hedges = np.histogram(self.pulse_lengths, bins=np.arange(0, Track.HIST_BINS, 1))
         self.bpl = self.hedges[np.where(self.hist == self.hist.max())[0]][0]
-        print("\b\b\b, histogram). Base pulse length is %i samples" % self.bpl)
+        print("\b\b\b, histogram). Most frequent pulse length is %i samples" % self.bpl)
         if self.bpl <= 0:
             raise ValueError("Cannot determine base pulse length for track %s" % num)
        
@@ -147,10 +147,10 @@ class Tape:
 
         if bpl > 0:
             self.bpl = bpl
-            print("* Using user-provided base pulse length of %i samples" % self.bpl)
+            print("* Using user-provided Base Pulse Length of %i samples" % self.bpl)
         else:
             self.bpl = int(np.round(self.bpl / len(channels)))
-            print("* Using base pulse length of %i samples" % self.bpl)
+            print("* Using most frequent pulse length of %i samples as the Base Pulse Length" % self.bpl)
 
         del bits
         del samples
@@ -197,8 +197,8 @@ class ScannerPE:
         self.p_delta = int(np.round(args.pulsemargin * tape.bpl))
         self.pshort_min = tape.bpl - self.p_delta
         self.pshort_max = tape.bpl + self.p_delta
-        self.plong_min = 2 * self.pshort_min
-        self.plong_max = 2 * self.pshort_max
+        self.plong_min = 2 * tape.bpl - self.p_delta
+        self.plong_max = 2 * tape.bpl + self.p_delta
         self.row = np.zeros(16, dtype=np.uint8)
         self.blocks = []
         self.max_skew = args.skew * self.tape.bpl
