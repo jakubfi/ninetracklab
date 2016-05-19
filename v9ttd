@@ -135,15 +135,16 @@ class Tape:
         mem = self.mem_estimate(len(samples), len(channels))
         print("* Estimated peak memory usage: %sB" % unitize(mem, base=1024))
 
-        print("* Unpacking samples...")
-        bits = np.unpackbits(samples.view(dtype=np.uint8))
         self.tracks = []
         self.bpl = 0
         for i, c in enumerate(channels):
             print("* Slicing channel %i into track %s: " % (c, self.track_names[i]), end="", flush=True)
-            t = Track(bits[chan_remap[c]::16], i)
+            data = np.bitwise_and(samples, 1<<c)
+            t = Track(data, i)
             self.tracks.append(t)
             self.bpl += t.bpl
+            if i==8:
+                input()
 
         if bpl > 0:
             self.bpl = bpl
@@ -152,22 +153,17 @@ class Tape:
             self.bpl = int(np.round(self.bpl / len(channels)))
             print("* Using most frequent pulse length of %i samples as the Base Pulse Length" % self.bpl)
 
-        del bits
         del samples
 
         print("* Tape is now ready to roll!")
         
     # --------------------------------------------------------------------
     def mem_estimate(self, sample_count, track_count):
-        TRACK_FILL = 1.0 / 20 # samples to edges ratio
-        bits_per_track = 16 * sample_count/16 # 16 bits per sample, 16 tracks in sample_count
-        bytes_per_track = TRACK_FILL * bits_per_track * 2 * 8 # 2 structures, 8 bytes per cell
+        TRACK_FILL = 0.22
+        mem_samples = sample_count * 4
+        mem_tracks = track_count * sample_count * (4+4) * TRACK_FILL
 
-        mem_samples = sample_count * 2
-        mem_bits = mem_samples * 8
-        mem_tracks = track_count * bytes_per_track
-
-        return mem_samples + mem_bits + mem_tracks
+        return mem_samples + mem_tracks
 
     # --------------------------------------------------------------------
     def print_stats(self):
@@ -369,7 +365,7 @@ parser = argparse.ArgumentParser(description='Virtual 9-Track Tape Drive')
 parser.add_argument('-i', '--input', help="Input tape image", required=True)
 parser.add_argument('-o', '--output', help="Output file name or prefix", required=False)
 parser.add_argument('-O', '--otype', help="Output type", choices=['blocks', 'files', 'emimg', 'print'], required=False)
-parser.add_argument('-c', '--chlist', help="Input channel position list specified as: P,7,6,5,4,3,2,1,0 (P=parity, 0=LSB). Default is: 8,7,6,5,4,3,2,1,0", default="8,7,6,5,4,3,2,1,0", required=False)
+parser.add_argument('-c', '--chlist', help="Input channel list specified as: p,7,6,5,4,3,2,1,0 (p=parity track, 0=LSB track). Default mapping is: 8,7,6,5,4,3,2,1,0", default="8,7,6,5,4,3,2,1,0", required=False)
 parser.add_argument('-d', '--downsample', help="Downsample input data by n > 1", type=int, default=0, required=False)
 parser.add_argument('-p', '--pulselen', help="Base pulse length (guessed if none specified)", type=int, required=False, default=0)
 parser.add_argument('-m', '--pulsemargin', help="Max allowed base pulse margin (0.0 - 0.5)", type=float, required=False, default=0.3)
