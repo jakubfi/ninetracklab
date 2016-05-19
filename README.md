@@ -56,10 +56,11 @@ v9ttd requires the following to work:
 ## v9ttd options
 
 * **-h**, **--help** - Print help
-* **-i INPUT**, **--input INPUT** - Onput tape image
+* **-i INPUT**, **--input INPUT** - Input tape image
 * **-o OUTPUT**, **--output OUTPUT** - Output file name or prefix
 * **-O TYPE**, **--otype TYPE** - Output type (blocks, files, emimg, print)
-* **-t TRACKLIST**, **--tracklist TRACKLIST** - Input track position list specified as: b0,b1,...,b8,parity (b0 is LSB)
+* **-c CHLIST**, **--chlist CHLIST** - Input channel position list specified as: P,7,6,5,4,3,2,1,0 (P=parity, 0=LSB). Default is: 8,7,6,5,4,3,2,1,0
+* **-d DOWNSAMPLE**, **--downsample DOWNSAMPLE** - Downsample input data by n > 1
 * **-p PULSELEN**, **--pulselen PULSELEN** - Base pulse length (guessed if none specified)
 * **-m PULSEMARGIN**, **--pulsemargin PULSEMARGIN** -  Max allowed base pulse margin (0.0 - 0.5)
 * **-s** SKEW, **--skew SKEW** - Max allowed track skew (0.0 - 0.5)

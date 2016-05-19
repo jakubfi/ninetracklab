@@ -1,11 +1,11 @@
-naming scheme
-
 PE:
  * parity check
  * crc chrck
  * bit-flip fixing
- * allow for missing pulses in PE scanner ???
- * honor skew in pe analysis ???
+ * allow for missing pulses in scanner ???
+ * allow for missing pulses in analyzer ???
+ * honor skew in analysis ???
 
 NRZ:
  * space finder
+ * clock generator
