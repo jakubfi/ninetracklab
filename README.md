@@ -99,7 +99,9 @@ otherwise you need to provide proper channel to track mapping.
 
 Numbers in the **-c** map list are logic analyzer channel numbers.
 Position in the list denotes the bit significance as follows:
+
     parity, 2^7, 2^6, 2^5, 2^4, 2^3, 2^2, 2^1, 2^0
+
 For example, if logic analyzer channels are connected the following way:
 
 * channel 0 -> parity
