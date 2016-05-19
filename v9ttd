@@ -76,14 +76,14 @@ class Track:
 
         print("(edges...", end="", flush=True)
         # offsets in a bitstream where signal switches polarity
-        self.pulse_offsets = np.where(bits[:-1] != bits[1:])[0]
+        self.pulse_offsets = (np.where(bits[:-1] != bits[1:])[0]).astype(np.uint32)
         if len(self.pulse_offsets) <= 0:
             print("")
             raise ValueError("No signal edges found on track %s" % num)
 
         print("\b\b\b, lengths...", end="", flush=True)
         # pulse lengths (to the next polarity switch)
-        self.pulse_lengths = self.pulse_offsets[1:] - self.pulse_offsets[:-1]
+        self.pulse_lengths = (self.pulse_offsets[1:] - self.pulse_offsets[:-1]).astype(np.uint16)
         if len(self.pulse_lengths) <= 0:
             print("")
             raise ValueError("No pulse lengths found on track %s" % num)
@@ -121,11 +121,13 @@ class Tape:
         print("")
 
         print("* Opening tape image: %s with %i data channels..." % (filename, len(channels)))
-        samples = np.fromfile(filename, dtype=np.uint16)
-        print("* Input data: %sB, %ssamples" % (unitize(samples.nbytes, base=1024), unitize(len(samples))))
+        samples_in = np.memmap(filename, dtype=np.uint16, mode='r')
+        print("* Input data: %sB, %ssamples" % (unitize(samples_in.nbytes, base=1024), unitize(len(samples_in))))
         if downsample > 1:
-            print("* Downsampling by %i to  %ssamples" % (downsample, unitize(len(samples)/downsample)))
-            samples = np.array(samples[0::downsample], dtype=np.uint16)
+            print("* Downsampling by %i to  %ssamples" % (downsample, unitize(len(samples_in)/downsample)))
+            samples = np.array(samples_in[0::downsample], dtype=np.uint16)
+        else:
+            samples = samples_in
         if len(samples) == 0:
             raise ValueError("No samples to process")
 
