@@ -113,9 +113,6 @@ class Tape:
     # --------------------------------------------------------------------
     def __init__(self, filename, channels, downsample=1, bpl=0):
 
-        # map "natural" bit order (15..0) to 0..15 numbering for 16-bit LE input treated as bytes
-        chan_remap = [ 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8 ]
-
         print("* Using channel:track mapping:", end="")
         for t, c in enumerate(reversed(channels)):
             print(" %i:%s" % (c, self.track_names[t]), end="")
@@ -143,8 +140,6 @@ class Tape:
             t = Track(data, i)
             self.tracks.append(t)
             self.bpl += t.bpl
-            if i==8:
-                input()
 
         if bpl > 0:
             self.bpl = bpl
@@ -195,7 +190,7 @@ class ScannerPE:
         self.pshort_max = tape.bpl + self.p_delta
         self.plong_min = 2 * tape.bpl - self.p_delta
         self.plong_max = 2 * tape.bpl + self.p_delta
-        self.row = np.zeros(16, dtype=np.uint8)
+        self.row = np.zeros(16, dtype=np.int64)
         self.blocks = []
         self.max_skew = args.skew * self.tape.bpl
         print("* PE scaner initialized with: bpl=%i, margin=%f (%i), short=[%i..%i], long=[%i..%i], skew=%f (%i)" % (tape.bpl, args.pulsemargin, self.p_delta, self.pshort_min, self.pshort_max, self.plong_min, self.plong_max, args.skew, self.max_skew))
