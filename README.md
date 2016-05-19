@@ -55,17 +55,17 @@ v9ttd requires the following to work:
 
 ## v9ttd options
 
-* **-h**, **--help** - Print help
-* **-i INPUT**, **--input INPUT** - Input tape image
-* **-o OUTPUT**, **--output OUTPUT** - Output file name or prefix
-* **-O TYPE**, **--otype TYPE** - Output type (blocks, files, emimg, print)
-* **-c CHLIST**, **--chlist CHLIST** - Input channel position list specified as: P,7,6,5,4,3,2,1,0 (P=parity, 0=LSB). Default is: 8,7,6,5,4,3,2,1,0
-* **-d DOWNSAMPLE**, **--downsample DOWNSAMPLE** - Downsample input data by n > 1
-* **-p PULSELEN**, **--pulselen PULSELEN** - Base pulse length (guessed if none specified)
-* **-m PULSEMARGIN**, **--pulsemargin PULSEMARGIN** -  Max allowed base pulse margin (0.0 - 0.5)
-* **-s** SKEW, **--skew SKEW** - Max allowed track skew (0.0 - 0.5)
-* **-S**, **--stats** - Print track stats and exit
-* **-G**, **--gstats** - Draw track stats and exit (requires matplotlib)
+* **-h**/**--help** - Print help
+* **-i**/**--input INPUT** - Input tape image
+* **-o**/**--output OUTPUT** - Output file name or prefix
+* **-O**/**--otype TYPE** - Output type (blocks, files, emimg, print)
+* **-c**/**--chlist CHLIST** - Input channel position list specified as: P,7,6,5,4,3,2,1,0 (P=parity, 0=LSB). Default is: 8,7,6,5,4,3,2,1,0
+* **-d**/**--downsample DOWNSAMPLE** - Downsample input data by n > 1
+* **-p**/**--pulselen PULSELEN** - Base pulse length (guessed if none specified)
+* **-m**/**--pulsemargin PULSEMARGIN** -  Max allowed base pulse margin (0.0 - 0.5)
+* **-s**/**--skew SKEW** - Max allowed track skew (0.0 - 0.5)
+* **-S**/**--stats** - Print track stats and exit
+* **-G**/**--gstats** - Draw track stats and exit (requires matplotlib)
 
 ## Running v9ttd
 
