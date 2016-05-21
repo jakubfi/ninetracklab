@@ -2,9 +2,6 @@ PE:
  * parity check
  * crc chrck
  * bit-flip fixing
- * allow for missing pulses in scanner ???
- * allow for missing pulses in analyzer ???
- * honor skew in analysis ???
 
 NRZ:
  * space finder
