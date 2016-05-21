@@ -86,7 +86,7 @@ void print_usage()
 {
 	printf("Virtual 9-Track Tape Drive v%s\n\n", V9TTD_VERSION);
 	printf(
-	"Usage: v9ttd -i input -S\n"
+	"Usage: v9ttd -i input -S [-c chlist] [-d downsample]\n"
 	"       v9ttd -i input -p pulse_len [-c chlist] [-m pulse_margin] [-d downsample] [-s skew]\n"
 	"       v9ttd -h\n"
 	"\n"

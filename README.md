@@ -41,10 +41,12 @@ digitize it on your own and prepare an image file readable by v9ttd.
 
 Quality of the input data plays a great role in how successful the readout is.
 In general, the higher sampling frequency the beter, but you need to consider final image size too.
+
 For example:
+
 1600bpi PE tape has a maximum od 3200 flux changes per inch.
-This translates to 160kHz signal for a tape running at 50in/s.
-1MS/s would be the lowest "safe" sampling frequency, at which resulting dump file
+This translates to max 160kHz signal for a tape running at 50in/s.
+1MS/s would be the lowest "safe" practical sampling frequency, at which resulting dump file
 is 1GiB in size.
 
 # Building v9ttd
@@ -62,15 +64,15 @@ make
 make install
 ```
 
-# Analyzing images
+# Analyzing tape images
 
 v9ttd input is a 16-bit LE binary file, where each word contains all 9 bits
 of track signal in a given point in time. In other words: each 16-bit value is a
-tape row sample. This format is used by Saleae software when exporting data to a binary file:
+tape row sample. This is a format used by Saleae software when exporting data to a binary file:
 
 http://support.saleae.com/hc/en-us/articles/208667306-Binary-data-export-format-description
 
-## v9ttd options
+## Program parameters summary
 
 * **-h** - Print help
 * **-i input** - Input tape image file name
@@ -83,10 +85,30 @@ http://support.saleae.com/hc/en-us/articles/208667306-Binary-data-export-format-
 
 ## Running v9ttd
 
-### Channel to track mapping
+v9ttd can run in one of two modes:
+
+* pulse length statistical analysis (selected by specifying **-S** switch at the commandline)
+* tape contents analysis (used otherwise)
+
+First mode can help with finding out parameters for running v9ttd in the second mode.
+It does not analyze the signal for data, it just lets you see what are the pulse lenghts
+in your sampled signal (for both positive and negative pulses, polarity doesn't matter).
+
+Depending on the mode, different options should/can be used:
+
+* pulse analysis: `v9ttd -i input -S [-c chlist] [-d downsample]`
+* content analysis: `v9ttd -i input -p pulse_len [-c chlist] [-m pulse_margin] [-d downsample] [-s skew]`
+
+### Input file name (-i)
+
+This parameter is required for both modes of operation. It specifies the input file that v9ttd works on.
+
+### Channel to track mapping (-c)
+
+This parameter is optional for both modes of operation.
 
 By default v9ttd assumes that logic analyzer probes were connected to the drive so that
-logic channels 0-7 carried signals for data bits 2^0...2^7, and channel 8 carried the parity track:
+logic channels 0-7 carry signals for data bits 2^0...2^7, and channel 8 carry the parity track:
 
 * channel 0 -> bit 2^0
 * channel 1 -> bit 2^1
@@ -122,7 +144,9 @@ you would need to remap them with:
 
     v9ttd -i input.bin -c 0,8,7,6,5,4,3,2,1
 
-### Downsampling
+### Downsampling (-d)
+
+This parameter is optional for both modes of operation.
 
 If your input is sampled with high frequency, for example 10MS/s, you may want to downsample it
 before analysis to lower the memory usage and speed up the proces. To downsample a signal
@@ -130,9 +154,58 @@ by 5 (to 2MS/s), use:
 
     v9ttd -i input.bin -d 5
 
-### Base pulse length and margin
+### Signal statistics (-S)
 
-### Tape skew
+This switch selects the pulse analysis mode, which lets you see a histogram of all pulses found
+on the tape image. For example:
 
-### Signal statistics
+
+```
+Pulse length histogram:
+   1 : ####
+   2 : #################################################
+   3 : ##############################################
+   4 : #############################
+   5 : #######################################################
+   6 : ##################################################################################
+   7 : ##################################################################
+   8 : ###############
+   9 : ####
+  10 : ##
+  11 : ###############
+  12 : ###################
+  13 : #######
+  14 : ##
+```
+
+From the above you can guess that the base pulse length (or the BPL, or the minimum flux transition distance) is 6 samples -
+this is the most frequent pulse length. There is also another, last peek at 12 samples (double the BPL),
+which indicates, that this tape is PE-encoded.
+Pulses of length around 1-4 seem to be a digital noise "created" between blocks by tape drive's digital stage drivers.
+
+### Base pulse length and margin (-p and -m)
+
+Now that you know what the BPL is, you can set parameters for the tape content analysis. BPL is set with **-p**
+option, amd **-m** allows you to set the +- margin (as a ratio of BPL). For example, the following command:
+
+    v9ttd -i input.bin -b 62 -m 0.3
+
+sets the base pulse length to 62 with margin of 0.3 BPL, allowing it to be anywhere between 38 and 86 (inclusive).
+
+Following table shows base pulse length values for various tape formats and speeds sampled at 10MS/s:
+
+| Tape    |  800 BPI | 1600 BPI | 3200 BPI |
+| Speed   |   NRZI   |    PE    |    PE    |
+|---------|----------|----------|----------|
+| 25 in/s |   500    |   125    |    62    |
+| 50 in/s |   250    |    62    |    31    |
+|100 in/s |   125    |    31    |    15    |
+
+### Inter-track skew (-s)
+
+Due to tape heads magnetic gap misalignment and inaccuracies in tape vs. head aligment
+tracks may become skewed. '-s' option allows you to specify maximum allowed skew
+as a ratio of BPL.
+
+
 
