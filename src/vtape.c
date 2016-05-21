@@ -39,17 +39,29 @@ struct vtape * vtape_open(char *filename, int chmap[9], int downsample)
 	int input_samples = st.st_size / 2;
 	t->sample_count = input_samples / downsample;
 	t->filename = strdup(filename);
+
 	int fd = open(filename, O_RDONLY);
 	uint16_t *source = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 	t->data = calloc(t->sample_count, sizeof(uint16_t));
+
 	// remap channels so tracks are in order: p, 7, 6, 5, 4, 3, 2, 1, 0
-	for (int i=0, i_in=0 ; i<t->sample_count ; i++, i_in++) {
-		int d = source[i_in];
-		int d_o = 0;
-		for (int c=0 ; c<9 ; c++) {
-			d_o |= ((d >> chmap[c]) & 1) << c;
+	// (two separate loops because performance...)
+	if (downsample > 1) {
+		for (int i=0 ; i<t->sample_count ; i++) {
+			int d_o = 0;
+			for (int c=0 ; c<9 ; c++) {
+				d_o |= ((source[i*downsample] >> chmap[c]) & 1) << c;
+			}
+			t->data[i] = d_o;
 		}
-		t->data[i] = d_o;
+	} else {
+		for (int i=0 ; i<t->sample_count ; i++) {
+			int d_o = 0;
+			for (int c=0 ; c<9 ; c++) {
+				d_o |= ((source[i] >> chmap[c]) & 1) << c;
+			}
+			t->data[i] = d_o;
+		}
 	}
 
 	munmap(source, st.st_size);

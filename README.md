@@ -47,6 +47,21 @@ This translates to 160kHz signal for a tape running at 50in/s.
 1MS/s would be the lowest "safe" sampling frequency, at which resulting dump file
 is 1GiB in size.
 
+# Building v9ttd
+
+To build v9ttd from sources you'll need:
+
+* cmake
+* GNU make
+
+```
+mkdir build
+cd build
+cmake ..
+make
+make install
+```
+
 # Analyzing images
 
 v9ttd input is a 16-bit LE binary file, where each word contains all 9 bits
@@ -55,27 +70,16 @@ tape row sample. This format is used by Saleae software when exporting data to a
 
 http://support.saleae.com/hc/en-us/articles/208667306-Binary-data-export-format-description
 
-## Software requirements
-
-v9ttd requires the following to work:
-
-* python3
-* numpy
-* matplotlib (optional)
-
 ## v9ttd options
 
-* **-h**/**--help** - Print help
-* **-i**/**--input INPUT** - Input tape image
-* **-o**/**--output OUTPUT** - Output file name or prefix
-* **-O**/**--otype TYPE** - Output type (blocks, files, emimg, print)
-* **-c**/**--chlist CHLIST** - Input channel list specified as: p,7,6,5,4,3,2,1,0 (p=parity track, 0=LSB track). Default is: 8,7,6,5,4,3,2,1,0
-* **-d**/**--downsample DOWNSAMPLE** - Downsample input data by n > 1
-* **-p**/**--pulselen PULSELEN** - Base pulse length (guessed if none specified)
-* **-m**/**--pulsemargin PULSEMARGIN** -  Max allowed base pulse margin (0.0 - 0.5)
-* **-s**/**--skew SKEW** - Max allowed track skew (0.0 - 0.5)
-* **-S**/**--stats** - Print track stats and exit
-* **-G**/**--gstats** - Draw track stats and exit (requires matplotlib)
+* **-h** - Print help
+* **-i input** - Input tape image file name
+* **-p len** - Base pulse length (>1)
+* **-c chlist** - Input channel list specified as: p,7,6,5,4,3,2,1,0 (p=parity track, 0=LSB track). Default is: 8,7,6,5,4,3,2,1,0
+* **-d ratio** - Downsample input data by n>1
+* **-m margin** - Max allowed base pulse margin (0.0 - 0.5)
+* **-s skew** - Max allowed inter-track skew (0.0 - 0.5)
+* **-S** - Calculate and print pulse statistics
 
 ## Running v9ttd
 

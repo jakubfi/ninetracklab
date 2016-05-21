@@ -1,7 +1,7 @@
 PE:
  * parity check
  * crc chrck
- * bit-flip fixing
+ * bit-flip fixing ???
 
 NRZ:
  * space finder
