@@ -15,13 +15,14 @@
 //  Foundation, Inc.,
 //  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef __PE_H__
+#define __PE_H__
 
 #include "vtape.h"
 
-int term_width();
-void print_stats(struct vtape *t);
+int vtape_get_pe_preamble(struct vtape *t);
+int vtape_get_pe_block(struct vtape *t);
+int vtape_analyze_pe(struct vtape *t);
 
 #endif
 

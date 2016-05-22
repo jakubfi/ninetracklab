@@ -25,8 +25,9 @@
 #include <sys/ioctl.h>
 #include <getopt.h>
 
-#include "vtape.h"
 #include "utils.h"
+#include "vtape.h"
+#include "pe.h"
 
 #define DEFAULT_SKEW 0.1f
 #define DEFAULT_MARGIN 0.4f
@@ -114,6 +115,10 @@ struct config * parse_args(int argc, char **argv)
 	cfg->pulse_margin = DEFAULT_MARGIN;
 	cfg->skew = DEFAULT_SKEW;
 	cfg->downsample = 1;
+	for (int i=0 ; i<9 ; i++) {
+		cfg->chmap[i] = 8-i;
+	}
+
 	int option;
 	char *ch;
 	char *s;
@@ -223,7 +228,6 @@ int main(int argc, char **argv)
 	struct vtape *t = vtape_open(cfg->input_name, cfg->chmap, cfg->downsample);
 	printf("Loaded %i samples (downsample factor: 1/%i)\n", t->sample_count, cfg->downsample);
 
-//	int chmap[9] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 //	struct vtape *t = vtape_make(test_tape, 16, chmap);
 
 	if (cfg->action == A_STATS) {
