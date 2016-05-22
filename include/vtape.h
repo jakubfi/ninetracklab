@@ -23,13 +23,19 @@
 enum vt_error_codes {
 	VT_OK = 0,
 	VT_EOT = -1,
+	VT_EOB = -2,
 };
+
+#define DEFAULT_BUF_SIZE (1 * 1024 * 1024)
 
 struct vtape {
 	char *filename;
 	unsigned sample_count;
 	uint16_t *data;
 	unsigned pos;
+
+	uint16_t *buf;
+	int buf_count;
 
 	int nbuckets;
 	int *hist;
@@ -52,8 +58,6 @@ void vtape_set_bpl(struct vtape *t, int len, int margin);
 void vtape_set_skew(struct vtape *t, int skew_max);
 int vtape_get_pulse(struct vtape *t, int *pulse_start, int deskew_max);
 void vtape_scan_pulses(struct vtape *t, int nbuckets);
-int vtape_get_pe_preamble(struct vtape *t);
-int vtape_analyze_pe(struct vtape *t);
 
 #endif
 

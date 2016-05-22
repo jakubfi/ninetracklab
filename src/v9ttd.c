@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 		printf("PE analyzer initialized with: bpl=%i, margin=%i (%.2f), short_pulse=[%i..%i], long_pulse=[%i..%i], skew_max=%i (%.2f)\n", t->bpl, t->bpl_margin, cfg->pulse_margin, t->bpl_min, t->bpl_max, t->bpl2_min, t->bpl2_max, t->skew_max, cfg->skew);
 
 		printf("Running PE analysis... ");
-		int blocks = vtape_analyze_pe(t);
+		int blocks = pe_analyze(t);
 		printf("got %i PE blocks\n", blocks);
 	}
 

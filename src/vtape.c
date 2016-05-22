@@ -39,6 +39,7 @@ struct vtape * vtape_open(char *filename, int chmap[9], int downsample)
 	int input_samples = st.st_size / 2;
 	t->sample_count = input_samples / downsample;
 	t->filename = strdup(filename);
+	t->buf = malloc(DEFAULT_BUF_SIZE * sizeof(uint16_t));
 
 	int fd = open(filename, O_RDONLY);
 	uint16_t *source = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
@@ -78,6 +79,7 @@ struct vtape * vtape_make(uint16_t *data, int count)
 	t->filename = strdup("TEST TAPE");
 	t->data = malloc(count * sizeof(uint16_t));
 	memcpy(t->data, data, count * sizeof(uint16_t));
+	t->buf = malloc(DEFAULT_BUF_SIZE * sizeof(uint16_t));
 
 	return t;
 }
@@ -90,6 +92,7 @@ void vtape_close(struct vtape *t)
 	free(t->data);
 	free(t->filename);
 	free(t->hist);
+	free(t->buf);
 	free(t);
 }
 

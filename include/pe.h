@@ -20,9 +20,9 @@
 
 #include "vtape.h"
 
-int vtape_get_pe_preamble(struct vtape *t);
-int vtape_get_pe_block(struct vtape *t);
-int vtape_analyze_pe(struct vtape *t);
+int pe_find_burst(struct vtape *t, int *burst_start);
+int pe_get_block(struct vtape *t);
+int pe_analyze(struct vtape *t);
 
 #endif
 

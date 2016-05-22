@@ -22,6 +22,7 @@
 
 int term_width();
 void print_stats(struct vtape *t);
+int parity9(int x);
 
 #endif
 

@@ -55,4 +55,13 @@ void print_stats(struct vtape *t)
 	free(line);
 }
 
+// --------------------------------------------------------------------------
+int parity9(int x)
+{
+	for (int d=8 ; d>0 ; d>>=2) {
+		x ^= x >> d;
+	}
+	return x & 1;
+}
+
 // vim: tabstop=4 shiftwidth=4 autoindent
