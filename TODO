@@ -1,6 +1,7 @@
 PE:
  * parity check
  * bit-flip fixing
+ * tape marks fix
 
 NRZ:
  * space finder

@@ -21,8 +21,22 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <stdarg.h>
 
 #include "vtape.h"
+
+int enable_debug = 1;
+
+// -----------------------------------------------------------------------
+void VTDEBUG(char *format, ...)
+{
+	if (enable_debug) {
+		va_list ap;
+		va_start(ap, format);
+		vprintf(format, ap);
+		va_end(ap);
+	}
+}
 
 // --------------------------------------------------------------------------
 int term_width()

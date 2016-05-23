@@ -18,10 +18,12 @@
 #ifndef __PE_H__
 #define __PE_H__
 
+#include <inttypes.h>
+
 #include "vtape.h"
 
 int pe_find_burst(struct vtape *t, int *burst_start);
-int pe_get_block(struct vtape *t);
+int pe_get_block(struct vtape *t, uint16_t *buf);
 int pe_analyze(struct vtape *t);
 
 #endif

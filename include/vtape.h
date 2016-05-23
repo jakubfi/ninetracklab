@@ -20,12 +20,10 @@
 
 #include <inttypes.h>
 
-#define DEFAULT_BUF_SIZE (1 * 1024 * 1024)
-
 enum vt_error_codes {
 	VT_OK = 0,
 	VT_EOT = -1,
-	VT_EOB = -2,
+	VT_EPULSE = -2,
 };
 
 enum chunk_formats {
@@ -56,9 +54,6 @@ struct vtape {
 	unsigned sample_count;
 	uint16_t *data;
 	unsigned pos;
-
-	uint16_t *buf;
-	int buf_count;
 
 	int nbuckets;
 	int *hist;
