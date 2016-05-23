@@ -20,13 +20,36 @@
 
 #include <inttypes.h>
 
+#define DEFAULT_BUF_SIZE (1 * 1024 * 1024)
+
 enum vt_error_codes {
 	VT_OK = 0,
 	VT_EOT = -1,
 	VT_EOB = -2,
 };
 
-#define DEFAULT_BUF_SIZE (1 * 1024 * 1024)
+enum chunk_formats {
+	F_PE,
+	F_NRZI,
+};
+
+enum chunk_types {
+	C_NONE,
+	C_JUNK,
+	C_BLOCK,
+	C_MARK,
+	C_EOT,
+};
+
+struct tchunk {
+	int offset;
+	int samples;
+	int type;
+	int format;
+	uint16_t *data;
+	int len;
+	struct tchunk *next;
+};
 
 struct vtape {
 	char *filename;
@@ -48,7 +71,17 @@ struct vtape {
 	int bpl2_min;
 	int bpl2_max;
 	int skew_max;
+
+	struct tchunk *chunk_first, *chunk_last;
+	int chunks;
+	int blocks[2];
+	int marks[2];
 };
+
+void tchunk_drop(struct tchunk *chunk);
+int vtape_add_block(struct vtape *t, int format, int offset, int samples, uint16_t *buf, int count);
+int vtape_add_mark(struct vtape *t, int format, int offset, int samples);
+int vtape_add_eot(struct vtape *t);
 
 struct vtape * vtape_open(char *filename, int chmap[9], int downsample);
 struct vtape * vtape_make(uint16_t *data, int count);

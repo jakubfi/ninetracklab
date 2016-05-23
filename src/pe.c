@@ -29,28 +29,6 @@ enum burst_search_results {
 	B_DONE,
 };
 
-enum block_types {
-	PE_DATA,
-	PE_MARK,
-};
-
-struct pe_block {
-	int start;
-	int pulses_count;
-	int type;
-	uint16_t *data;
-	int data_len;
-};
-
-// --------------------------------------------------------------------------
-void pe_block_drop(struct pe_block *blk)
-{
-	if (!blk) return;
-
-	free(blk->data);
-	free(blk);
-}
-
 // --------------------------------------------------------------------------
 static int pe_search_mark(struct vtape *t, int pulse, int pulse_start)
 {
@@ -166,7 +144,7 @@ static int pe_find_burst(struct vtape *t, int *burst_start)
 			}
 		} else if (preamble_result == B_DONE) {
 			*burst_start = preamble_start;
-			return PE_DATA;
+			return C_BLOCK;
 		}
 
 		if (mark_result == B_CONT) {
@@ -175,7 +153,7 @@ static int pe_find_burst(struct vtape *t, int *burst_start)
 			}
 		} else if (mark_result == B_DONE) {
 			*burst_start = mark_start;
-			return PE_MARK;
+			return C_MARK;
 		}
 	}
 
@@ -244,49 +222,35 @@ static int pe_get_data(struct vtape *t)
 }
 
 // --------------------------------------------------------------------------
-struct pe_block *pe_get_block(struct vtape *t)
+int pe_get_block(struct vtape *t)
 {
 	int burst_start;
 	int res;
 
 	res = pe_find_burst(t, &burst_start);
 
-	if (res != VT_OK) {
-		return NULL;
-	}
-
-	struct pe_block *blk = calloc(1, sizeof(struct pe_block));
-	blk->type = res;
-	blk->start = burst_start;
-	blk->pulses_count = t->pos - blk->start;
-
-	if (blk->type == PE_DATA) {
+	if (res == VT_EOT) {
+		vtape_add_eot(t);
+		return VT_EOT;
+	} else if (res == C_BLOCK) {
 		res = pe_get_data(t);
 		if (res == VT_OK) {
-			blk->data = malloc(t->buf_count * sizeof(uint16_t));
-			memcpy(blk->data, t->buf, t->buf_count * sizeof(uint16_t));
-			blk->data_len = t->buf_count;
+			vtape_add_block(t, F_PE, burst_start, t->pos - burst_start, t->buf, t->buf_count);
 		}
-	} else if (blk->type == PE_MARK) {
-		blk->data = NULL;
-		blk->data_len = 0;
+	} else if (res == C_MARK) {
+		vtape_add_mark(t, F_PE, burst_start, t->pos - burst_start);
 	}
 
-	return blk;
+	return VT_OK;
 }
 
 // --------------------------------------------------------------------------
 int pe_analyze(struct vtape *t)
 {
-	int blocks = 0;
-	struct pe_block *blk;
-
-	while ((blk = pe_get_block(t))) {
-		blocks++;
-		pe_block_drop(blk);
+	while (pe_get_block(t) == VT_OK) {
 	}
 
-	return blocks;
+	return VT_OK;
 }
 
 

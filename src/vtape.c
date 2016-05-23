@@ -30,6 +30,66 @@
 #include "vtape.h"
 
 // --------------------------------------------------------------------------
+void tchunk_drop(struct tchunk *chunk)
+{
+	if (!chunk) return;
+
+	free(chunk->data);
+	free(chunk);
+}
+
+// --------------------------------------------------------------------------
+static void chunk_add(struct vtape *t, struct tchunk *chunk)
+{
+	if (t->chunk_last) {
+		t->chunk_last->next = chunk;
+	} else {
+		t->chunk_first = chunk;
+	}
+
+	t->chunk_last = chunk;
+}
+
+// --------------------------------------------------------------------------
+int vtape_add_block(struct vtape *t, int format, int offset, int samples, uint16_t *buf, int count)
+{
+	struct tchunk *chunk = calloc(1, sizeof(struct tchunk));
+	chunk->type = C_BLOCK;
+	chunk->offset = offset;
+	chunk->samples = samples;
+	chunk->data = malloc(count * sizeof(uint16_t));
+	memcpy(chunk->data, buf, count * sizeof(uint16_t));
+	chunk->len = count;
+	t->blocks[format]++;
+	chunk_add(t, chunk);
+
+	return 0;
+}
+
+// --------------------------------------------------------------------------
+int vtape_add_mark(struct vtape *t, int format, int offset, int samples)
+{
+	struct tchunk *chunk = calloc(1, sizeof(struct tchunk));
+	chunk->type = C_MARK;
+	chunk->offset = offset;
+	chunk->samples = samples;
+	t->marks[format]++;
+	chunk_add(t, chunk);
+
+	return 0;
+}
+
+// --------------------------------------------------------------------------
+int vtape_add_eot(struct vtape *t)
+{
+	struct tchunk *chunk = calloc(1, sizeof(struct tchunk));
+	chunk->type = C_EOT;
+	chunk_add(t, chunk);
+
+	return 0;
+}
+
+// --------------------------------------------------------------------------
 struct vtape * vtape_open(char *filename, int chmap[9], int downsample)
 {
 	struct vtape *t = calloc(1, sizeof(struct vtape));
@@ -88,6 +148,14 @@ struct vtape * vtape_make(uint16_t *data, int count)
 void vtape_close(struct vtape *t)
 {
 	if (!t) return;
+
+	struct tchunk *ch = t->chunk_first;
+	struct tchunk *chn;
+	while (ch) {
+		chn = ch->next;
+		tchunk_drop(ch);
+		ch = chn;
+	}
 
 	free(t->data);
 	free(t->filename);
