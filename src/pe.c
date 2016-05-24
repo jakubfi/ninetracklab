@@ -39,7 +39,7 @@ static int pe_search_mark(struct vtape *t, int pulse, int pulse_start)
 
 	static int mark_count;
 	static int fail_count;
-	static int last_mark;
+	static int last_pulse_start;
 
 	const int bits_recorded = 0b011000100;
 	//const int bits_empty = 0b000011010;
@@ -47,37 +47,32 @@ static int pe_search_mark(struct vtape *t, int pulse, int pulse_start)
 	if (last_result != B_CONT) {
 		mark_count = 0;
 		fail_count = 0;
-		last_mark = 0;
 	}
 
-	int time_delta = pulse_start - last_mark;
+	int time_delta = pulse_start - last_pulse_start;
+	last_pulse_start = pulse_start;
 
-	// it's time for another mark...
-	if ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max)) {
-		// ...and the mark is there
-		if ((pulse & bits_recorded) == bits_recorded) {
-			mark_count++;
-			last_mark = pulse_start;
-			if (mark_count > 64 * 2) {
-				// just in case...
-				if (fail_count > 10) {
-					last_result = B_DONE;
-				}
-			} else {
-				last_result = B_CONT;
-			}
-		// ...but there is something else
+	if (
+		// it's the mark...
+		((pulse & bits_recorded) == bits_recorded)
+		// ...and it's on time
+		&& ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max))
+	) {
+		if (mark_count == 0) {
+			VTDEBUG("mark start\n");
 		} else {
-			last_result = B_FAIL;
+			VTDEBUG("mark cont\n");
 		}
-	// it's not time for another mark...
+		mark_count++;
+		last_result = B_CONT;
+	// it's not the mark
 	} else {
-		// ...but mark show up, which is wrong
-		if ((pulse & bits_recorded) == bits_recorded) {
-			last_result = B_FAIL;
-		// ...so it is junk, which is good
+		if (mark_count > 64 * 2) {
+			VTDEBUG("mark done\n");
+			last_result = B_DONE;
 		} else {
-			fail_count++;
+			VTDEBUG("mark fail\n");
+			last_result = B_FAIL;
 		}
 	}
 
