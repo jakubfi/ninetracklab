@@ -164,7 +164,6 @@ static int pe_get_row(struct vtape *t, uint16_t *data)
 	int pulse_start;
 	int last_pulse_start = t->pos;
 	int row_ready = -2;
-	int row_length = 0;
 
 	while (row_ready < 0) {
 		int pulse = vtape_get_pulse(t, &pulse_start, t->skew_max);
@@ -174,7 +173,6 @@ static int pe_get_row(struct vtape *t, uint16_t *data)
 
 		int time_delta = pulse_start - last_pulse_start;
 		last_pulse_start = pulse_start;
-		row_length += time_delta;
 
 		if ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max)) {
 			*data ^= pulse;
