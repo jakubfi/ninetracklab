@@ -1,5 +1,5 @@
 
-Virtual 9-Track Tape Drive (v9ttd) lets you decode digital images of PE/NRZI
+Virtual 9-Track Tape Drive (v9ttd) lets you decode digital images of PE/NRZ1
 9-track tapes. The idea behind the tool is that you can read tapes which are
 otherwise unreadable by the drive you have access to due to tape damage
 or format incompatibility.
@@ -195,7 +195,7 @@ sets the base pulse length to 62 with margin of 0.3 BPL, allowing it to be anywh
 Following table shows base pulse length values for various tape formats and speeds sampled at 10MS/s:
 
 | Tape    |  800 BPI | 1600 BPI | 3200 BPI |
-| Speed   |   NRZI   |    PE    |    PE    |
+| Speed   |   NRZ1   |    PE    |    PE    |
 |---------|----------|----------|----------|
 | 25 in/s |   500    |   125    |    62    |
 | 50 in/s |   250    |    62    |    31    |

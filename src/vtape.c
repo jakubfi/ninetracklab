@@ -29,6 +29,32 @@
 
 #include "vtape.h"
 
+const char *chunk_format_names[] = {
+	"PE",
+	"NRZ1",
+	"NONE",
+};
+
+const char *chunk_type_names[] = {
+	"NONE",
+	"JUNK",
+	"BLOCK",
+	"TAPE MARK",
+	"END OF TAPE",
+};
+
+// --------------------------------------------------------------------------
+const char * vtape_get_format_name(int format)
+{
+	return chunk_format_names[format];
+}
+
+// --------------------------------------------------------------------------
+const char * vtape_get_type_name(int type)
+{
+	return chunk_type_names[type];
+}
+
 // --------------------------------------------------------------------------
 void tchunk_drop(struct tchunk *chunk)
 {
@@ -80,10 +106,11 @@ int vtape_add_mark(struct vtape *t, int format, int offset, int samples)
 }
 
 // --------------------------------------------------------------------------
-int vtape_add_eot(struct vtape *t)
+int vtape_add_eot(struct vtape *t, int offset)
 {
 	struct tchunk *chunk = calloc(1, sizeof(struct tchunk));
 	chunk->type = C_EOT;
+	chunk->offset = offset;
 	chunk_add(t, chunk);
 
 	return 0;

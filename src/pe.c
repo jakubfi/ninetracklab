@@ -38,7 +38,6 @@ static int pe_search_mark(struct vtape *t, int pulse, int pulse_start)
 	static int last_result;
 
 	static int mark_count;
-	static int fail_count;
 	static int last_pulse_start;
 
 	const int bits_recorded = 0b011000100;
@@ -46,7 +45,6 @@ static int pe_search_mark(struct vtape *t, int pulse, int pulse_start)
 
 	if (last_result != B_CONT) {
 		mark_count = 0;
-		fail_count = 0;
 	}
 
 	int time_delta = pulse_start - last_pulse_start;
@@ -183,7 +181,7 @@ static int pe_get_row(struct vtape *t, uint16_t *data)
 			row_ready++;
 		} else if ((time_delta >= t->bpl2_min) && (time_delta <= t->bpl2_max)) {
 			*data ^= pulse;
-			row_ready+=2;
+			row_ready += 2;
 		} else {
 			// this shouldn't happen, everything should be aligned
 			// in vtape_get_pulse()
@@ -244,7 +242,7 @@ int pe_get_block(struct vtape *t, uint16_t *buf)
 
 	res = pe_find_burst(t, &burst_start);
 	if (res == VT_EOT) {
-		vtape_add_eot(t);
+		vtape_add_eot(t, t->pos);
 		return VT_EOT;
 	} else if (res == VT_EPULSE) {
 		return VT_EPULSE;

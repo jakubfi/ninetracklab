@@ -245,7 +245,27 @@ int main(int argc, char **argv)
 
 		printf("Running PE analysis... ");
 		pe_analyze(t);
+
 		printf("got %i PE blocks and %i PE tape marks\n", t->blocks[F_PE], t->marks[F_PE]);
+		struct tchunk *ch = t->chunk_first;
+		while (ch) {
+			printf("chunk @ %i (%i samples): %s %s, %i bytes\n",
+				ch->offset,
+				ch->samples,
+				vtape_get_format_name(ch->format),
+				vtape_get_type_name(ch->type),
+				ch->len
+			);
+			if (ch->type == C_BLOCK) {
+				printf("---- Block dump ---------------------------------------\n");
+				for (int i=0; i< ch->len ; i++) {
+					printf("%c", ch->data[i]);
+				}
+				printf("\n-------------------------------------------------------\n");
+			}
+
+			ch = ch->next;
+		}
 	}
 
 	vtape_close(t);

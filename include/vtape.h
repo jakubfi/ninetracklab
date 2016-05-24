@@ -28,7 +28,8 @@ enum vt_error_codes {
 
 enum chunk_formats {
 	F_PE,
-	F_NRZI,
+	F_NRZ1,
+	F_NONE,
 };
 
 enum chunk_types {
@@ -76,7 +77,9 @@ struct vtape {
 void tchunk_drop(struct tchunk *chunk);
 int vtape_add_block(struct vtape *t, int format, int offset, int samples, uint16_t *buf, int count);
 int vtape_add_mark(struct vtape *t, int format, int offset, int samples);
-int vtape_add_eot(struct vtape *t);
+int vtape_add_eot(struct vtape *t, int offset);
+const char * vtape_get_format_name(int format);
+const char * vtape_get_type_name(int type);
 
 struct vtape * vtape_open(char *filename, int chmap[9], int downsample);
 struct vtape * vtape_make(uint16_t *data, int count);

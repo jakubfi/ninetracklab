@@ -3,8 +3,18 @@
 import sys
 import random
 
-start_a = 0b11111111
-start_b = 0b00000001
+PE = 1
+NRZ1 = 2
+
+pulse_len = 60
+blk_size = 64
+presize = 40
+postsize = 40
+mark = 0b11111111
+marksize = 100
+encoder = PE
+
+nrze_data = 0
 
 # ------------------------------------------------------------------------
 def parity9(x):
@@ -23,53 +33,63 @@ def write_signal(outf, pmin, pmax, samples):
         outf.write(bytes([a, b&1]))
 
 # ------------------------------------------------------------------------
-def write_row(outf, pulse_len, data, parity):
-    print("  data: %i (%c), parity: %i" % (data, data, parity))
+def write_row_nrz1(outf, data, parity):
+    d = bytes([nrze_data&0xff, nrze_data>>8])
+    for i in range(pulse_len/2):
+        outf.write(d)
+    nrze_data ^= ((data&0xff)<<8) | (parity&1)
+    d = bytes([nrze_data&0xff, nrze_data>>8])
+    for i in range(pulse_len/2):
+        outf.write(d)
+
+# ------------------------------------------------------------------------
+def write_row_pe(outf, data, parity):
+    #print("  data: %i (%c), parity: %i" % (data, data, parity))
     for i in range(pulse_len):
         outf.write(bytes([data, parity&1]))
     for i in range(pulse_len):
         outf.write(bytes([(~data)&0xff, (~parity)&1]))
 
 # ------------------------------------------------------------------------
-def write_preamble(outf, pulse_len, plen):
-    print(" Preamble, %i repetitions" % (plen))
-    for i in range(plen):
-        write_row(outf, pulse_len, 0, 0)
-    write_row(outf, pulse_len, 0xff, 1)
+def write_preamble(outf):
+    print(" Preamble, %i repetitions" % (presize))
+    for i in range(presize):
+        row_writer(outf, 0, 0)
+    row_writer(outf, 0xff, 1)
 
 # ------------------------------------------------------------------------
-def write_postamble(outf, pulse_len, plen):
-    print(" Postamble, %i repetitions" % (plen))
-    write_row(outf, pulse_len, 0xff, 1)
-    for i in range(plen):
-        write_row(outf, pulse_len, 0, 0)
+def write_postamble(outf):
+    print(" Postamble, %i repetitions" % (postsize))
+    row_writer(outf, 0xff, 1)
+    for i in range(postsize):
+        row_writer(outf, 0, 0)
 
 # ------------------------------------------------------------------------
-def write_mark(outf, pulse_len, mark, marksize):
+def write_mark(outf):
     print(" Mark %i, %i repetitions" % (mark, marksize))
     for i in range(marksize):
-        write_row(outf, pulse_len, mark, 0)
+        row_writer(outf, mark, 0)
 
 # ------------------------------------------------------------------------
 def write_data(outf, pulse_len, data):
     print(" Data: %s" % data)
     for d in data:
         parity = parity9(d)
-        write_row(outf, pulse_len, d, parity)
+        row_writer(outf, d, parity)
 
 # ------------------------------------------------------------------------
-def write_file(inf, outf, pulse_len, blksize, presize, postsize, mark, marksize):
-    data = inf.read(blksize)
+def write_file(inf, outf):
+    data = inf.read(blk_size)
     while len(data) > 0:
-        write_preamble(outf, pulse_len, presize)
+        write_preamble(outf)
         write_data(outf, pulse_len, data)
-        write_postamble(outf, pulse_len, postsize)
-        data = inf.read(blksize)
+        write_postamble(outf)
+        data = inf.read(blk_size)
     write_signal(outf, 0, 0, 100)
-    write_mark(outf, pulse_len, mark, marksize)
+    write_mark(outf)
 
 # ------------------------------------------------------------------------
-def write_tape(input_files, output_file, pulse_len, blksize, presize, postsize, mark, marksize):
+def write_tape(input_files, output_file):
     outf = open(output_file, "wb+")
     print("Creating image file: %s" % output_file)
     write_signal(outf, 0, 0, 100);
@@ -77,19 +97,25 @@ def write_tape(input_files, output_file, pulse_len, blksize, presize, postsize, 
     for f in input_files:
         print("Saving file: %s" % f)
         inf = open(f, "rb")
-        write_file(inf, outf, pulse_len, blksize, presize, postsize, mark, marksize)
+        write_file(inf, outf)
         inf.close()
 
     write_signal(outf, 0, 0, 100)
-    write_mark(outf, pulse_len, mark, marksize)
+    write_mark(outf)
     write_signal(outf, 0, 0, 100);
 
     outf.close()
 
 # ------------------------------------------------------------------------
 
+if encoder == PE:
+    row_writer = write_row_pe
+else:
+    row_writer = write_row_nrz1
+
+
 output_file = sys.argv[1]
 
-write_tape(sys.argv[2:], output_file, 60, 64, 40, 40, 0b11111111, 100)
+write_tape(sys.argv[2:], output_file)
 
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
