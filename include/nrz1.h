@@ -15,16 +15,15 @@
 //  Foundation, Inc.,
 //  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef __NRZ1_H__
+#define __NRZ1_H__
+
+#include <inttypes.h>
 
 #include "vtape.h"
 
-void VTDEBUG_ON();
-void VTDEBUG(char *format, ...);
-int term_width();
-void print_stats(struct vtape *t);
-int parity9(int x);
+int nrz1_get_block(struct vtape *t, uint16_t *buf);
+int nrz1_analyze(struct vtape *t);
 
 #endif
 

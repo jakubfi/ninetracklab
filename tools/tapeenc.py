@@ -12,9 +12,9 @@ presize = 40
 postsize = 40
 mark = 0b11111111
 marksize = 100
-encoder = PE
+encoder = NRZ1
 
-nrze_data = 0
+nrz1_data = 0
 
 # ------------------------------------------------------------------------
 def parity9(x):
@@ -25,21 +25,31 @@ def parity9(x):
     return (~x) & 1
 
 # ------------------------------------------------------------------------
-def write_signal(outf, pmin, pmax, samples):
+def write_signal(outf, pmin, pmax, samples, zero=False):
     print("  signal: %i * [%i..%i]" % (samples, pmin, pmax))
     for i in range(samples):
-        a = int(random.random()*0xff)
-        b = int(random.random()*0xff)
+        if encoder == NRZ1:
+            a = nrz1_data & 0xff
+            b = nrz1_data >> 8
+        else:
+            a = int(random.random()*0xff)
+            b = int(random.random()*0xff)
         outf.write(bytes([a, b&1]))
 
 # ------------------------------------------------------------------------
 def write_row_nrz1(outf, data, parity):
-    d = bytes([nrze_data&0xff, nrze_data>>8])
-    for i in range(pulse_len/2):
+    print("  data: %i (%c), parity: %i" % (data, data, parity))
+
+    global nrz1_data
+
+    d = bytes([nrz1_data&0xff, nrz1_data>>8])
+    for i in range(pulse_len>>1):
         outf.write(d)
-    nrze_data ^= ((data&0xff)<<8) | (parity&1)
-    d = bytes([nrze_data&0xff, nrze_data>>8])
-    for i in range(pulse_len/2):
+
+    nrz1_data ^= ((data&0xff) | (parity<<8))
+
+    d = bytes([nrz1_data&0xff, nrz1_data>>8])
+    for i in range(pulse_len>>1):
         outf.write(d)
 
 # ------------------------------------------------------------------------
@@ -67,8 +77,20 @@ def write_postamble(outf):
 # ------------------------------------------------------------------------
 def write_mark(outf):
     print(" Mark %i, %i repetitions" % (mark, marksize))
-    for i in range(marksize):
-        row_writer(outf, mark, 0)
+    if encoder == PE:
+        for i in range(marksize):
+            row_writer(outf, mark, 0)
+    else:
+        row_writer(outf, 0b10100100, 0)
+        row_writer(outf, 0, 0)
+        row_writer(outf, 0, 0)
+        row_writer(outf, 0, 0)
+        row_writer(outf, 0, 0)
+        row_writer(outf, 0, 0)
+        row_writer(outf, 0, 0)
+        row_writer(outf, 0, 0)
+        row_writer(outf, 0b10100100, 0)
+
 
 # ------------------------------------------------------------------------
 def write_data(outf, pulse_len, data):
@@ -76,23 +98,43 @@ def write_data(outf, pulse_len, data):
     for d in data:
         parity = parity9(d)
         row_writer(outf, d, parity)
+    row_writer(outf, 0, 0)
+    row_writer(outf, 0, 0)
+    row_writer(outf, 0, 0)
+    row_writer(outf, 0xde, 0)
+    row_writer(outf, 0, 0)
+    row_writer(outf, 0, 0)
+    row_writer(outf, 0, 0)
+    row_writer(outf, 0xad, 0)
 
 # ------------------------------------------------------------------------
 def write_file(inf, outf):
     data = inf.read(blk_size)
     while len(data) > 0:
-        write_preamble(outf)
+        if encoder == PE:
+            write_preamble(outf)
         write_data(outf, pulse_len, data)
-        write_postamble(outf)
+        if encoder == PE:
+            write_postamble(outf)
         data = inf.read(blk_size)
-    write_signal(outf, 0, 0, 100)
+    if encoder == PE:
+        write_signal(outf, 0, 0, 100)
+    else:
+        write_signal(outf, 0, 0, 100, zero=True)
+
     write_mark(outf)
 
 # ------------------------------------------------------------------------
 def write_tape(input_files, output_file):
     outf = open(output_file, "wb+")
     print("Creating image file: %s" % output_file)
-    write_signal(outf, 0, 0, 100);
+
+    if encoder == PE:
+        z = False
+    else:
+        z = True
+
+    write_signal(outf, 0, 0, 100, zero=z);
 
     for f in input_files:
         print("Saving file: %s" % f)
@@ -100,13 +142,17 @@ def write_tape(input_files, output_file):
         write_file(inf, outf)
         inf.close()
 
-    write_signal(outf, 0, 0, 100)
+    write_signal(outf, 0, 0, 100, zero=z)
     write_mark(outf)
-    write_signal(outf, 0, 0, 100);
+    write_signal(outf, 0, 0, 100, zero=z);
 
     outf.close()
 
 # ------------------------------------------------------------------------
+# --- MAIN ---------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+# Usage: tapenc.py out_image in_file in_file ...
 
 if encoder == PE:
     row_writer = write_row_pe

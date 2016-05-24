@@ -3,6 +3,7 @@ ADD_EXECUTABLE(v9ttd
 	v9ttd.c
 	vtape.c
 	pe.c
+	nrz1.c
 )
 
 install(TARGETS v9ttd

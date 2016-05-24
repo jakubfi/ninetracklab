@@ -248,7 +248,7 @@ int pe_get_block(struct vtape *t, uint16_t *buf)
 		VTDEBUG("found preamble\n");
 		res = pe_get_data(t, buf);
 		if (res >= 0) {
-			vtape_add_block(t, F_PE, burst_start, t->pos - burst_start, buf, res);
+			vtape_add_block(t, F_PE, burst_start, t->pos - burst_start, buf, res, 0, 0);
 			VTDEBUG("Chunk data: '");
 			for (int i=0 ; i<res ; i++) {
 				VTDEBUG("%c", t->chunk_last->data[i] & 0xff);
@@ -272,6 +272,7 @@ int pe_analyze(struct vtape *t)
 	while (pe_get_block(t, buf) == VT_OK) {
 	}
 
+	free(buf);
 	return VT_OK;
 }
 

@@ -45,6 +45,8 @@ struct tchunk {
 	int samples;
 	int type;
 	int format;
+	int crc;
+	int hparity;
 	uint16_t *data;
 	int len;
 	struct tchunk *next;
@@ -66,6 +68,10 @@ struct vtape {
 	int bpl_max;
 	int bpl2_min;
 	int bpl2_max;
+	int bpl4_min;
+	int bpl4_max;
+	int bpl8_min;
+	int bpl8_max;
 	int skew_max;
 
 	struct tchunk *chunk_first, *chunk_last;
@@ -75,7 +81,7 @@ struct vtape {
 };
 
 void tchunk_drop(struct tchunk *chunk);
-int vtape_add_block(struct vtape *t, int format, int offset, int samples, uint16_t *buf, int count);
+int vtape_add_block(struct vtape *t, int format, int offset, int samples, uint16_t *buf, int count, int crc, int hparity);
 int vtape_add_mark(struct vtape *t, int format, int offset, int samples);
 int vtape_add_eot(struct vtape *t, int offset);
 const char * vtape_get_format_name(int format);

@@ -22,12 +22,14 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/ioctl.h>
 #include <getopt.h>
 
 #include "utils.h"
 #include "vtape.h"
 #include "pe.h"
+#include "nrz1.h"
 
 #define DEFAULT_SKEW 0.1f
 #define DEFAULT_MARGIN 0.4f
@@ -64,12 +66,14 @@ enum actions {
 struct config {
 	char *input_name;
 	char *output_name;
+	int encoding;
 	int chmap[9];
 	int downsample;
 	int pulse_len;
 	double pulse_margin;
 	double skew;
 	int action;
+	int debug;
 };
 
 // --------------------------------------------------------------------------
@@ -95,12 +99,14 @@ void print_usage()
 	"   -h        : Print this help\n"
 	"   -S        : Calculate and print pulse statistics\n"
 	"   -i input  : Input file name\n"
+	"   -e enc    : Tape encoding (pe, nrz1)\n"
 	"   -p len    : Base pulse length (>1)\n"
 	"   -c chlist : Input channel list specified as: p,7,6,5,4,3,2,1,0\n"
 	"               (p=parity track, 0=LSB track). Default is: 8,7,6,5,4,3,2,1,0\n"
 	"   -m margin : Base pulse length margin (0.0-0.5, default %.2f)\n"
 	"   -s skew   : Maximum allowed inter-track skew (0.0-0.5, default %.2f)\n"
 	"   -d ratio  : Downsample input by ratio (>1)\n"
+	"   -D        : enable debug mode\n"
 	, DEFAULT_MARGIN, DEFAULT_SKEW
 	);
 }
@@ -115,6 +121,7 @@ struct config * parse_args(int argc, char **argv)
 	cfg->pulse_margin = DEFAULT_MARGIN;
 	cfg->skew = DEFAULT_SKEW;
 	cfg->downsample = 1;
+	cfg->encoding = F_NONE;
 	for (int i=0 ; i<9 ; i++) {
 		cfg->chmap[i] = 8-i;
 	}
@@ -124,7 +131,7 @@ struct config * parse_args(int argc, char **argv)
 	char *s;
 	int chcount = 0;
 
-	while ((option = getopt(argc, argv,"hSi:p:c:m:s:d:")) != -1) {
+	while ((option = getopt(argc, argv,"hSi:p:c:m:s:d:e:D")) != -1) {
 		switch (option) {
 			case 'h':
 				cfg->action |= A_HELP;
@@ -134,6 +141,17 @@ struct config * parse_args(int argc, char **argv)
 				break;
 			case 'i':
 				cfg->input_name = strdup(optarg);
+				break;
+			case 'e':
+				cfg->action |= A_ANALYZE;
+				if (!strcasecmp(optarg, "pe")) {
+					cfg->encoding = F_PE;
+				} else if (!strcasecmp(optarg, "nrz1")) {
+					cfg->encoding = F_NRZ1;
+				} else {
+					printf("Unknown encoding: %s. Use 'pe' or 'nrz1'\n", optarg);
+					cfg->action |= A_QUIT;
+				}
 				break;
 			case 'p':
 				cfg->action |= A_ANALYZE;
@@ -168,6 +186,10 @@ struct config * parse_args(int argc, char **argv)
 			case 'd':
 				cfg->downsample = atoi(optarg);
 				break;
+			case 'D':
+				cfg->debug = 1;
+				VTDEBUG_ON();
+				break;
 			default:
 				cfg->action |= A_QUIT;
 				break;
@@ -194,6 +216,9 @@ int check_config(struct config *cfg)
 		return -1;
 	} else if ((cfg->action == A_ANALYZE) && (!cfg->pulse_len)) {
 		printf("Pulse length '-p' is required\n");
+		return -1;
+	} else if ((cfg->action == A_ANALYZE) && (cfg->encoding == F_NONE)) {
+		printf("Encoding '-e' is required\n");
 		return -1;
 	}
 
@@ -236,38 +261,56 @@ int main(int argc, char **argv)
 		printf("most frequent pulse is %i samples\n", t->mfp);
 		printf("Pulse length histogram:\n");
 		print_stats(t);
-		vtape_rewind(t);
-	} else {
-		vtape_set_bpl(t, cfg->pulse_len, cfg->pulse_len * cfg->pulse_margin);
-		vtape_set_skew(t, cfg->pulse_len * cfg->skew);
-
-		printf("PE analyzer initialized with: bpl=%i, margin=%i (%.2f), short_pulse=[%i..%i], long_pulse=[%i..%i], skew_max=%i (%.2f)\n", t->bpl, t->bpl_margin, cfg->pulse_margin, t->bpl_min, t->bpl_max, t->bpl2_min, t->bpl2_max, t->skew_max, cfg->skew);
-
-		printf("Running PE analysis... ");
-		pe_analyze(t);
-
-		printf("got %i PE blocks and %i PE tape marks\n", t->blocks[F_PE], t->marks[F_PE]);
-		struct tchunk *ch = t->chunk_first;
-		while (ch) {
-			printf("chunk @ %i (%i samples): %s %s, %i bytes\n",
-				ch->offset,
-				ch->samples,
-				vtape_get_format_name(ch->format),
-				vtape_get_type_name(ch->type),
-				ch->len
-			);
-			if (ch->type == C_BLOCK) {
-				printf("---- Block dump ---------------------------------------\n");
-				for (int i=0; i< ch->len ; i++) {
-					printf("%c", ch->data[i]);
-				}
-				printf("\n-------------------------------------------------------\n");
-			}
-
-			ch = ch->next;
-		}
+		goto fin;
 	}
 
+	vtape_set_bpl(t, cfg->pulse_len, cfg->pulse_len * cfg->pulse_margin);
+	vtape_set_skew(t, cfg->pulse_len * cfg->skew);
+	printf("%s analyzer initialized with: bpl=%i, margin=%i (%.2f), short_pulse=[%i..%i], long_pulse=[%i..%i], skew_max=%i (%.2f)\n",
+		cfg->encoding == F_PE ? "PE" : "NRZ1",
+		t->bpl,
+		t->bpl_margin,
+		cfg->pulse_margin,
+		t->bpl_min,
+		t->bpl_max,
+		t->bpl2_min,
+		t->bpl2_max,
+		t->skew_max,
+		cfg->skew
+	);
+	printf("Running analysis... ");
+
+	if (cfg->encoding == F_PE) {
+		pe_analyze(t);
+	} else if (cfg->encoding == F_NRZ1) {
+		nrz1_analyze(t);
+	}
+
+	printf("got %i blocks and %i tape marks\n", t->blocks[F_PE], t->marks[F_PE]);
+
+	// print tape contents
+
+	struct tchunk *ch = t->chunk_first;
+	while (ch) {
+		printf("chunk @ %i (%i samples): %s %s, %i bytes\n",
+			ch->offset,
+			ch->samples,
+			vtape_get_format_name(ch->format),
+			vtape_get_type_name(ch->type),
+			ch->len
+		);
+		if (ch->type == C_BLOCK) {
+			printf("---- Block dump ---------------------------------------\n");
+			for (int i=0; i< ch->len ; i++) {
+				printf("%c", ch->data[i]);
+			}
+			printf("\n-------------------------------------------------------\n");
+		}
+
+		ch = ch->next;
+	}
+
+fin:
 	vtape_close(t);
 	cfg_drop(cfg);
 

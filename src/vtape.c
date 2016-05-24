@@ -28,6 +28,7 @@
 #include <sys/ioctl.h>
 
 #include "vtape.h"
+#include "utils.h"
 
 const char *chunk_format_names[] = {
 	"PE",
@@ -77,16 +78,19 @@ static void chunk_add(struct vtape *t, struct tchunk *chunk)
 }
 
 // --------------------------------------------------------------------------
-int vtape_add_block(struct vtape *t, int format, int offset, int samples, uint16_t *buf, int count)
+int vtape_add_block(struct vtape *t, int format, int offset, int samples, uint16_t *buf, int count, int crc, int hparity)
 {
 	struct tchunk *chunk = calloc(1, sizeof(struct tchunk));
 	chunk->type = C_BLOCK;
+	chunk->format = format;
 	chunk->offset = offset;
 	chunk->samples = samples;
 	chunk->data = malloc(count * sizeof(uint16_t));
 	memcpy(chunk->data, buf, count * sizeof(uint16_t));
 	chunk->len = count;
 	t->blocks[format]++;
+	chunk->hparity = hparity;
+	chunk->crc = crc;
 	chunk_add(t, chunk);
 
 	return 0;
@@ -203,6 +207,10 @@ void vtape_set_bpl(struct vtape *t, int len, int margin)
 	t->bpl_max = len + margin;
 	t->bpl2_min = 2*len - margin;
 	t->bpl2_max = 2*len + margin;
+	t->bpl4_min = 4*len - margin;
+	t->bpl4_max = 4*len + margin;
+	t->bpl8_min = 8*len - margin;
+	t->bpl8_max = 8*len + margin;
 }
 
 // --------------------------------------------------------------------------

@@ -25,7 +25,13 @@
 
 #include "vtape.h"
 
-int enable_debug = 0;
+static int enable_debug = 0;
+
+// -----------------------------------------------------------------------
+void VTDEBUG_ON()
+{
+	enable_debug = 1;
+}
 
 // -----------------------------------------------------------------------
 void VTDEBUG(char *format, ...)
