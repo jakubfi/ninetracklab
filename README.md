@@ -194,12 +194,11 @@ sets the base pulse length to 62 with margin of 0.3 BPL, allowing it to be anywh
 
 Following table shows base pulse length values for various tape formats and speeds sampled at 10MS/s:
 
-| Tape    |  800 BPI | 1600 BPI | 3200 BPI |
-| Speed   |   NRZ1   |    PE    |    PE    |
-|---------|----------|----------|----------|
-| 25 in/s |   500    |   125    |    62    |
-| 50 in/s |   250    |    62    |    31    |
-|100 in/s |   125    |    31    |    15    |
+|  Tape Speed   |  800BPI NRZ1 | 1600BPI PE | 3200BPI PE |
+| ------------- | ------------ | ---------- | ---------- |
+|    25 in/s    |     500      |    125     |     62     |
+|    50 in/s    |     250      |     62     |     31     |
+|   100 in/s    |     125      |     31     |     15     |
 
 ### Inter-track skew (-s)
 
