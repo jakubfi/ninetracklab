@@ -97,19 +97,24 @@ static int pe_search_preamble(struct vtape *t, int pulse, int pulse_start)
 		(pulse == 0b111111101) || (pulse == 0b110111111) || (pulse == 0b111111011) || (pulse == 0b111011111) ||
 		(pulse == 0b111110111) || (pulse == 0b111101111);
 
+VTDEBUG("pulse: %i @ %i len: %i\n", pulse, pulse_start, time_delta);
 	// found sync pulse...
 	if (is_sync) {
 		// ...a short one = 0 => start or continue searching
 		if ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max)) {
+			VTDEBUG("sync cont\n");
 			zero_count++;
 			last_result = B_CONT;
 		// ...a long one = 1 => end of preamble if we have > 25 "0" pulses already
 		} else if ((zero_count > 25 * 2) && (time_delta >= t->bpl2_min) && (time_delta <= t->bpl2_max)) {
+			VTDEBUG("sync done\n");
 			last_result = B_DONE;
 		} else {
+			VTDEBUG("sync fail (pulse length)\n");
 			last_result = B_FAIL;
 		}
 	} else {
+			VTDEBUG("sync fail (not sync pulse)\n");
 		last_result = B_FAIL;
 	}
 
@@ -173,6 +178,8 @@ static int pe_get_row(struct vtape *t, uint16_t *data)
 
 		int time_delta = pulse_start - last_pulse_start;
 		last_pulse_start = pulse_start;
+
+		VTDEBUG("data pulse: %i @ %i len %i\n", pulse, pulse_start, time_delta);
 
 		if ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max)) {
 			*data ^= pulse;

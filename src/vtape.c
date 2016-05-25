@@ -131,21 +131,23 @@ struct vtape * vtape_open(char *filename, int chmap[9], int downsample)
 	t->sample_count = input_samples / downsample;
 	t->filename = strdup(filename);
 
+	int delays[9] = { 3, 6, 10, 24, 0, 42, 2, 33, 16 };
+
 	int fd = open(filename, O_RDONLY);
 	uint16_t *source = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 	t->data = calloc(t->sample_count, sizeof(uint16_t));
 
 	// remap channels so tracks are in order: p, 7, 6, 5, 4, 3, 2, 1, 0
 	// (two separate loops because performance...)
-	if (downsample > 1) {
-		for (int i=0 ; i<t->sample_count ; i++) {
+//	if (downsample > 1) {
+		for (int i=100 ; i<t->sample_count ; i++) {
 			int d_o = 0;
 			for (int c=0 ; c<9 ; c++) {
-				d_o |= ((source[i*downsample] >> chmap[8-c]) & 1) << c;
+				d_o |= ((source[i*downsample-delays[chmap[8-c]]] >> chmap[8-c]) & 1) << c;
 			}
 			t->data[i] = d_o;
 		}
-	} else {
+/*	} else {
 		for (int i=0 ; i<t->sample_count ; i++) {
 			int d_o = 0;
 			for (int c=0 ; c<9 ; c++) {
@@ -154,7 +156,7 @@ struct vtape * vtape_open(char *filename, int chmap[9], int downsample)
 			t->data[i] = d_o;
 		}
 	}
-
+*/
 	munmap(source, st.st_size);
 	close(fd);
 	return t;
@@ -249,6 +251,7 @@ int vtape_get_pulse(struct vtape *t, int *pulse_start, int deskew_max)
 		// if signal bounces back in the deskew window, treat it as a separete edge
 		deskew_bounced = pulse & next_pulse;
 		if (deskew_bounced) {
+			VTDEBUG("deskew bounce\n");
 			break;
 		}
 
@@ -258,6 +261,8 @@ int vtape_get_pulse(struct vtape *t, int *pulse_start, int deskew_max)
 		deskew_max--;
 		t->pos++;
 	}
+
+//	VTDEBUG("deskewed pulse %i @ %i deskew len %i\n", pulse, *pulse_start, t->pos - *pulse_start);
 
 	return pulse;
 }
