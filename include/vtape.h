@@ -72,7 +72,8 @@ struct vtape {
 	int bpl4_max;
 	int bpl8_min;
 	int bpl8_max;
-	int skew_max;
+	int deskew_static[9];
+	int deskew_dynamic;
 
 	struct tchunk *chunk_first, *chunk_last;
 	int chunks;
@@ -87,12 +88,12 @@ int vtape_add_eot(struct vtape *t, int offset);
 const char * vtape_get_format_name(int format);
 const char * vtape_get_type_name(int type);
 
-struct vtape * vtape_open(char *filename, int chmap[9], int downsample);
+struct vtape * vtape_open(char *filename, int chmap[9], int downsample, int static_deskew[9]);
 struct vtape * vtape_make(uint16_t *data, int count);
 void vtape_close(struct vtape *t);
 void vtape_rewind(struct vtape *t);
 void vtape_set_bpl(struct vtape *t, int len, int margin);
-void vtape_set_skew(struct vtape *t, int skew_max);
+void vtape_set_deskew(struct vtape *t, int dynamic);
 int vtape_get_pulse(struct vtape *t, int *pulse_start, int deskew_max);
 void vtape_scan_pulses(struct vtape *t, int nbuckets);
 

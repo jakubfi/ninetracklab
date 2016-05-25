@@ -57,19 +57,19 @@ static int pe_search_mark(struct vtape *t, int pulse, int pulse_start)
 		&& ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max))
 	) {
 		if (mark_count == 0) {
-			VTDEBUG("mark start\n");
+			VTDEBUG(4, "mark start\n");
 		} else {
-			VTDEBUG("mark cont\n");
+			VTDEBUG(5, "mark_count++\n");
 		}
 		mark_count++;
 		last_result = B_CONT;
 	// it's not the mark
 	} else {
 		if (mark_count > 64 * 2) {
-			VTDEBUG("mark done\n");
+			VTDEBUG(4, "mark done\n");
 			last_result = B_DONE;
 		} else {
-			VTDEBUG("mark fail\n");
+			VTDEBUG(4, "mark fail\n");
 			last_result = B_FAIL;
 		}
 	}
@@ -97,24 +97,25 @@ static int pe_search_preamble(struct vtape *t, int pulse, int pulse_start)
 		(pulse == 0b111111101) || (pulse == 0b110111111) || (pulse == 0b111111011) || (pulse == 0b111011111) ||
 		(pulse == 0b111110111) || (pulse == 0b111101111);
 
-VTDEBUG("pulse: %i @ %i len: %i\n", pulse, pulse_start, time_delta);
+	VTDEBUG(5, "pulse: %i @ %i len: %i\n", pulse, pulse_start, time_delta);
+
 	// found sync pulse...
 	if (is_sync) {
 		// ...a short one = 0 => start or continue searching
 		if ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max)) {
-			VTDEBUG("sync cont\n");
+			VTDEBUG(5, "sync_pulses++\n");
 			zero_count++;
 			last_result = B_CONT;
 		// ...a long one = 1 => end of preamble if we have > 25 "0" pulses already
 		} else if ((zero_count > 25 * 2) && (time_delta >= t->bpl2_min) && (time_delta <= t->bpl2_max)) {
-			VTDEBUG("sync done\n");
+			VTDEBUG(4, "sync done\n");
 			last_result = B_DONE;
 		} else {
-			VTDEBUG("sync fail (pulse length)\n");
+			VTDEBUG(4, "sync fail (pulse length)\n");
 			last_result = B_FAIL;
 		}
 	} else {
-			VTDEBUG("sync fail (not sync pulse)\n");
+			VTDEBUG(4, "sync fail (not sync pulse)\n");
 		last_result = B_FAIL;
 	}
 
@@ -129,11 +130,11 @@ static int pe_find_burst(struct vtape *t, int *burst_start)
 	int preamble_result = B_FAIL;
 	int mark_result = B_FAIL;
 
-	VTDEBUG("find burst\n");
+	VTDEBUG(3, "find (any) burst\n");
 
 	while (1) {
 		int pulse_start;
-		int pulse = vtape_get_pulse(t, &pulse_start, t->skew_max);
+		int pulse = vtape_get_pulse(t, &pulse_start, t->deskew_dynamic);
 		if (pulse < VT_OK) {
 			return pulse;
 		}
@@ -171,7 +172,7 @@ static int pe_get_row(struct vtape *t, uint16_t *data)
 	int row_ready = -2;
 
 	while (row_ready < 0) {
-		int pulse = vtape_get_pulse(t, &pulse_start, t->skew_max);
+		int pulse = vtape_get_pulse(t, &pulse_start, t->deskew_dynamic);
 		if (pulse < 0) {
 			return pulse;
 		}
@@ -179,7 +180,7 @@ static int pe_get_row(struct vtape *t, uint16_t *data)
 		int time_delta = pulse_start - last_pulse_start;
 		last_pulse_start = pulse_start;
 
-		VTDEBUG("data pulse: %i @ %i len %i\n", pulse, pulse_start, time_delta);
+		VTDEBUG(5, "data pulse: %i @ %i len %i\n", pulse, pulse_start, time_delta);
 
 		if ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max)) {
 			*data ^= pulse;
@@ -204,23 +205,22 @@ static int pe_get_data(struct vtape *t, uint16_t *buf)
 	int row_count = 0;
 	uint16_t data = 0x01ff; // we start with all ones, as last row of preamble is all ones
 
-	VTDEBUG("reading data\n");
-
 	while (1) {
 		int res = pe_get_row(t, &data);
 		if (res < 0) {
 			return res;
 		}
-		VTDEBUG("data: %x (%c)\n", data, data);
+		VTDEBUG(5, "data: %x (%c)\n", data, data);
 
 		buf[row_count++] = data;
 
 		// start of postamble
 		if ((postamble_rows <= 0) && (data == 0b0000000111111111)) {
-			VTDEBUG("postamble start\n");
+			VTDEBUG(4, "postamble start\n");
 			postamble_rows++;
 		// inside postamble
 		} else if ((postamble_rows >= 1) && (data == 0)) {
+			VTDEBUG(5, "postamble++\n");
 			postamble_rows++;
 		// false positive
 		} else {
@@ -229,7 +229,7 @@ static int pe_get_data(struct vtape *t, uint16_t *buf)
 		if (postamble_rows >= 41) {
 			// cut postamble
 			row_count -= postamble_rows;
-			VTDEBUG("postamble done\n");
+			VTDEBUG(4, "postamble done\n");
 			break;
 		}
 	}
@@ -243,7 +243,7 @@ int pe_get_block(struct vtape *t, uint16_t *buf)
 	int burst_start = 0;
 	int res;
 
-	VTDEBUG("find burst\n");
+	VTDEBUG(1, "pe_get_block()\n");
 
 	res = pe_find_burst(t, &burst_start);
 	if (res == VT_EOT) {
@@ -252,18 +252,18 @@ int pe_get_block(struct vtape *t, uint16_t *buf)
 	} else if (res == VT_EPULSE) {
 		return VT_EPULSE;
 	} else if (res == C_BLOCK) {
-		VTDEBUG("found preamble\n");
+		VTDEBUG(3, "Got preamble, reaing block data\n");
 		res = pe_get_data(t, buf);
 		if (res >= 0) {
 			vtape_add_block(t, F_PE, burst_start, t->pos - burst_start, buf, res, 0, 0);
-			VTDEBUG("Chunk data: '");
+			VTDEBUG(2, "Block data: '");
 			for (int i=0 ; i<res ; i++) {
-				VTDEBUG("%c", t->chunk_last->data[i] & 0xff);
+				VTDEBUG(2, "%c", t->chunk_last->data[i] & 0xff);
 			}
-			VTDEBUG("'\n");
+			VTDEBUG(2, "'\n");
 		}
 	} else if (res == C_MARK) {
-		VTDEBUG("found mark\n");
+		VTDEBUG(3, "Got tape mark\n");
 		vtape_add_mark(t, F_PE, burst_start, t->pos - burst_start);
 	}
 

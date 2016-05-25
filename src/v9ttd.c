@@ -73,7 +73,7 @@ struct config {
 	double pulse_margin;
 	double skew;
 	int action;
-	int debug;
+	int debug_level;
 };
 
 // --------------------------------------------------------------------------
@@ -106,7 +106,7 @@ void print_usage()
 	"   -m margin : Base pulse length margin (0.0-0.5, default %.2f)\n"
 	"   -s skew   : Maximum allowed inter-track skew (0.0-0.5, default %.2f)\n"
 	"   -d ratio  : Downsample input by ratio (>1)\n"
-	"   -D        : enable debug mode\n"
+	"   -D level  : enable debug on level 1-9\n"
 	, DEFAULT_MARGIN, DEFAULT_SKEW
 	);
 }
@@ -131,7 +131,7 @@ struct config * parse_args(int argc, char **argv)
 	char *s;
 	int chcount = 0;
 
-	while ((option = getopt(argc, argv,"hSi:p:c:m:s:d:e:D")) != -1) {
+	while ((option = getopt(argc, argv,"hSi:p:c:m:s:d:e:D:")) != -1) {
 		switch (option) {
 			case 'h':
 				cfg->action |= A_HELP;
@@ -187,8 +187,8 @@ struct config * parse_args(int argc, char **argv)
 				cfg->downsample = atoi(optarg);
 				break;
 			case 'D':
-				cfg->debug = 1;
-				VTDEBUG_ON();
+				cfg->debug_level = atoi(optarg);
+				VTDEBUG_ON(cfg->debug_level);
 				break;
 			default:
 				cfg->action |= A_QUIT;
@@ -249,8 +249,8 @@ int main(int argc, char **argv)
 		}
 	}
 	printf("\n");
-
-	struct vtape *t = vtape_open(cfg->input_name, cfg->chmap, cfg->downsample);
+	int sdeskew[9] = { 3, 6, 10, 24, 0, 42, 2, 33, 16 };
+	struct vtape *t = vtape_open(cfg->input_name, cfg->chmap, cfg->downsample, sdeskew);
 	printf("Loaded %i samples (downsample factor: 1/%i)\n", t->sample_count, cfg->downsample);
 
 //	struct vtape *t = vtape_make(test_tape, 16, chmap);
@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 	}
 
 	vtape_set_bpl(t, cfg->pulse_len, cfg->pulse_len * cfg->pulse_margin);
-	vtape_set_skew(t, cfg->pulse_len * cfg->skew);
+	vtape_set_deskew(t, cfg->pulse_len * cfg->skew);
 	printf("%s analyzer initialized with: bpl=%i, margin=%i (%.2f), short_pulse=[%i..%i], long_pulse=[%i..%i], skew_max=%i (%.2f)\n",
 		cfg->encoding == F_PE ? "PE" : "NRZ1",
 		t->bpl,
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 		t->bpl_max,
 		t->bpl2_min,
 		t->bpl2_max,
-		t->skew_max,
+		t->deskew_dynamic,
 		cfg->skew
 	);
 	printf("Running analysis... ");

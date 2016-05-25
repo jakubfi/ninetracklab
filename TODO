@@ -1,8 +1,19 @@
+general:
+ * proper static deskewer (user-provided and/or automatic)
+ * units: samples/ns/us/ms
+ * range searches
+ * append junk
+
+filters:
+ * edge sensitivity: r/f/rf ???
+ * noise rejection ???
+
 PE:
  * parity check
  * bit-flip fixing
  * tape marks fix
 
 NRZ:
- * space finder
- * clock generator
+ * vparity check
+ * hparity check
+ * crc check

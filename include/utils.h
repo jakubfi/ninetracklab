@@ -21,7 +21,7 @@
 #include "vtape.h"
 
 void VTDEBUG_ON();
-void VTDEBUG(char *format, ...);
+void VTDEBUG(int level, char *format, ...);
 int term_width();
 void print_stats(struct vtape *t);
 int parity9(int x);

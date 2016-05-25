@@ -25,18 +25,31 @@
 
 #include "vtape.h"
 
-static int enable_debug = 0;
+static int debug_level = 0;
+
+/*
+	1 - top functions
+	2 - pulse search failures
+	3 - main segments notifications (mark, pulse)
+	4 - inner-segment sections
+	5 - inner-segment details
+	6 - 
+	7 - 
+	8 - 
+	9 - deskewer vtape_get_pulse()
+*/
+
 
 // -----------------------------------------------------------------------
-void VTDEBUG_ON()
+void VTDEBUG_ON(int level)
 {
-	enable_debug = 1;
+	debug_level = level;
 }
 
 // -----------------------------------------------------------------------
-void VTDEBUG(char *format, ...)
+void VTDEBUG(int level, char *format, ...)
 {
-	if (enable_debug) {
+	if (debug_level >= level) {
 		va_list ap;
 		va_start(ap, format);
 		vprintf(format, ap);

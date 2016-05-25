@@ -37,11 +37,11 @@ int nrz1_get_block(struct vtape *t, uint16_t *buf)
 	int hparity;
 	int block_start = t->pos;
 
-	VTDEBUG("get block\n");
+	VTDEBUG(1, "nrz1_get_block\n");
 
 	while (1) {
 
-		int pulse = vtape_get_pulse(t, &pulse_start, t->skew_max);
+		int pulse = vtape_get_pulse(t, &pulse_start, t->deskew_dynamic);
 		if (pulse < 0) {
 			return pulse;
 		}
@@ -50,17 +50,17 @@ int nrz1_get_block(struct vtape *t, uint16_t *buf)
 
 		// data pulse
 		if ((rowcount == 0) || ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max))) {
-			VTDEBUG("data: 0x%04x (%c), %i\n", pulse, pulse&0xff, time_delta);
+			VTDEBUG(5, "block data: 0x%04x (%c), %i\n", pulse, pulse&0xff, time_delta);
 			buf[rowcount++] = pulse;
 		// hparity and crc pulse
 		} else if ((time_delta >= t->bpl4_min) && (time_delta <= t->bpl4_max)) {
 			if (got_crc) {
-				VTDEBUG("hparity: 0x%04x, %i\n", pulse, time_delta);
+				VTDEBUG(3, "hparity: 0x%04x, %i\n", pulse, time_delta);
 				hparity = pulse;
 				vtape_add_block(t, F_NRZ1, block_start, t->pos - block_start, buf, rowcount, crc, hparity);
 				return VT_OK;
 			} else {
-				VTDEBUG("crc: 0x%04x, %i\n", pulse, time_delta);
+				VTDEBUG(3, "crc: 0x%04x, %i\n", pulse, time_delta);
 				crc = pulse;
 				got_crc = 1;
 			}
@@ -70,11 +70,11 @@ int nrz1_get_block(struct vtape *t, uint16_t *buf)
 			&& (time_delta >= t->bpl8_min) && (time_delta <= t->bpl8_max
 			&& (rowcount == 1) && (buf[rowcount-1] == 0b10100100))
 		) {
-			VTDEBUG("tape mark: 0x%04x, %i\n", pulse, time_delta);
+			VTDEBUG(3, "tape mark: 0x%04x, %i\n", pulse, time_delta);
 			return VT_OK;
 		// bad pulse
 		} else {
-			VTDEBUG("bad pulse: 0x%04x, %i\n", pulse, time_delta);
+			VTDEBUG(2, "bad pulse: 0x%04x, %i\n", pulse, time_delta);
 		}
 
 		last_pulse_start = pulse_start;
