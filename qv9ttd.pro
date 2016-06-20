@@ -12,17 +12,18 @@ TARGET = qv9ttd
 TEMPLATE = app
 
 
-SOURCES += main.cpp\
-        mainwindow.cpp \
-    tapeview.cpp \
-    tapedrive.cpp \
+SOURCES +=\
     aboutdialog.cpp \
-    preprocessdialog.cpp \
-    histogramdialog.cpp \
-    histview.cpp \
+    blockstore.cpp \
     decodernrz1.cpp \
     decoderpe.cpp \
-    blockstore.cpp
+    histogramdialog.cpp \
+    histview.cpp \
+    main.cpp \
+    mainwindow.cpp \
+    preprocessdialog.cpp \
+    tapedrive.cpp \
+    tapeview.cpp
 
 HEADERS  += mainwindow.h \
     tapeview.h \

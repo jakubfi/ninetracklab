@@ -1,10 +1,8 @@
 <RCC>
-    <qresource prefix="/icons">
-        <file>reel.png</file>
-        <file>preprocess.png</file>
-        <file>histogram.png</file>
-    </qresource>
-    <qresource prefix="/images">
-        <file>tape drive.jpg</file>
+    <qresource prefix="/">
+        <file>icons/histogram.png</file>
+        <file>icons/preprocess.png</file>
+        <file>icons/reel.png</file>
+        <file>images/tape_drive.jpg</file>
     </qresource>
 </RCC>

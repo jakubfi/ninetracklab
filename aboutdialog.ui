@@ -44,7 +44,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap resource="resources.qrc">:/images/tape drive.jpg</pixmap>
+    <pixmap resource="resources.qrc">:/images/tape_drive.jpg</pixmap>
    </property>
   </widget>
   <widget class="QLabel" name="about">
