@@ -2,8 +2,8 @@
 #include <QDialog>
 #include <QDebug>
 
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
+#include "ninetracklab.h"
+#include "ui_ninetracklab.h"
 #include "aboutdialog.h"
 #include "preprocessdialog.h"
 #include "histogramdialog.h"
@@ -40,7 +40,7 @@ void DBG(int level, const char *format, ...)
 }
 
 // --------------------------------------------------------------------------
-v9ttd::v9ttd(QWidget *parent) : QMainWindow(parent), ui(new Ui::v9ttd), td(this), bs(this)
+NineTrackLab::NineTrackLab(QWidget *parent) : QMainWindow(parent), ui(new Ui::ninetracklab), td(this), bs(this)
 {
 	debug_level = 0;
 	ui->setupUi(this);
@@ -53,14 +53,14 @@ v9ttd::v9ttd(QWidget *parent) : QMainWindow(parent), ui(new Ui::v9ttd), td(this)
 }
 
 // --------------------------------------------------------------------------
-v9ttd::~v9ttd()
+NineTrackLab::~NineTrackLab()
 {
 	delete ui;
 	delete hist;
 }
 
 // --------------------------------------------------------------------------
-void v9ttd::on_actionImport_triggered()
+void NineTrackLab::on_actionImport_triggered()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, tr("Import tape image"), "", tr("Binary files (*.bin);;All files (*)"));
 
@@ -68,26 +68,26 @@ void v9ttd::on_actionImport_triggered()
 	pp.exec();
 
 	td.load(fileName);
-	setWindowTitle(QString("Virtual 9-track Tape Drive - " + fileName.section("/",-1,-1)));
+	setWindowTitle(QString("Nine Track Lab - " + fileName.section("/",-1,-1)));
 	td.preprocess();
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::on_actionAbout_triggered()
+void NineTrackLab::on_actionAbout_triggered()
 {
 	AboutDialog about(this);
 	about.exec();
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::on_actionPreprecessing_triggered()
+void NineTrackLab::on_actionPreprecessing_triggered()
 {
 	PreprocessDialog pp(this, &td);
 	pp.exec();
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::on_actionSignal_histogram_triggered()
+void NineTrackLab::on_actionSignal_histogram_triggered()
 {
 	if (hist->isHidden()) {
 		hist->show();
@@ -95,7 +95,7 @@ void v9ttd::on_actionSignal_histogram_triggered()
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::on_actionStart_analysis_triggered()
+void NineTrackLab::on_actionStart_analysis_triggered()
 {
 	bs.clear();
 
@@ -129,14 +129,14 @@ void v9ttd::on_actionStart_analysis_triggered()
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::setDeskew()
+void NineTrackLab::setDeskew()
 {
 	pe.set_deskew(ui->deskew->value());
 	nrz1.set_deskew(ui->deskew->value());
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::setPE()
+void NineTrackLab::setPE()
 {
 	pe.set_bpl(ui->bpl_min->value(), ui->bpl_max->value());
 	pe.set_sync_pulses(ui->sync_pulses_min->value());
@@ -144,14 +144,14 @@ void v9ttd::setPE()
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::setNRZ1()
+void NineTrackLab::setNRZ1()
 {
 	nrz1.set_cksum_space(ui->cksum_min->value(), ui->cksum_max->value());
 	nrz1.set_mark_space(ui->mark_min->value(), ui->mark_max->value());
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::on_edge_sens_currentIndexChanged(int edge_sens)
+void NineTrackLab::on_edge_sens_currentIndexChanged(int edge_sens)
 {
 	pe.set_edge_sens(edge_sens+1);
 	nrz1.set_edge_sens(edge_sens+1);
@@ -159,7 +159,7 @@ void v9ttd::on_edge_sens_currentIndexChanged(int edge_sens)
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::setScatter()
+void NineTrackLab::setScatter()
 {
 	QSpinBox *ch = (QSpinBox*) QObject::sender();
 	int id = ch->objectName().replace("unscatter", "").toInt();
@@ -168,7 +168,7 @@ void v9ttd::setScatter()
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::updateScatter()
+void NineTrackLab::updateScatter()
 {
 	for (int i=0 ; i<9 ; i++) {
 		QSpinBox *ch = findChild<QSpinBox*>(QString("unscatter%1").arg(i));
@@ -177,7 +177,7 @@ void v9ttd::updateScatter()
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::on_actionUnscatter_triggered()
+void NineTrackLab::on_actionUnscatter_triggered()
 {
 	td.unscatter();
 	ui->tapeview->update();
@@ -185,7 +185,7 @@ void v9ttd::on_actionUnscatter_triggered()
 }
 
 // -----------------------------------------------------------------------
-void v9ttd::on_auto_unscatter_stateChanged(int arg)
+void NineTrackLab::on_auto_unscatter_stateChanged(int arg)
 {
 	for (int i=0 ; i<9 ; i++) {
 		QSpinBox *ch = findChild<QSpinBox*>(QString("unscatter%1").arg(i));

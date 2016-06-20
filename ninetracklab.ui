@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>v9ttd</class>
- <widget class="QMainWindow" name="v9ttd">
+ <class>ninetracklab</class>
+ <widget class="QMainWindow" name="ninetracklab">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -1142,7 +1142,7 @@
   <connection>
    <sender>actionQuit</sender>
    <signal>triggered()</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1350,7 +1350,7 @@
   <connection>
    <sender>deskew</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setDeskew()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1366,7 +1366,7 @@
   <connection>
    <sender>bpl_min</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setPE()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1382,7 +1382,7 @@
   <connection>
    <sender>mark_max</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setNRZ1()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1398,7 +1398,7 @@
   <connection>
    <sender>bpl_max</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setPE()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1414,7 +1414,7 @@
   <connection>
    <sender>mark_min</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setNRZ1()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1430,7 +1430,7 @@
   <connection>
    <sender>cksum_min</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setNRZ1()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1446,7 +1446,7 @@
   <connection>
    <sender>cksum_max</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setNRZ1()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1462,7 +1462,7 @@
   <connection>
    <sender>sync_pulses_min</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setPE()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1478,7 +1478,7 @@
   <connection>
    <sender>mark_pulses_min</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setPE()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1494,7 +1494,7 @@
   <connection>
    <sender>unscatter0</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setScatter()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1510,7 +1510,7 @@
   <connection>
    <sender>unscatter1</sender>
    <signal>valueChanged(QString)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setScatter()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1526,7 +1526,7 @@
   <connection>
    <sender>unscatter2</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setScatter()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1542,7 +1542,7 @@
   <connection>
    <sender>unscatter3</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setScatter()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1558,7 +1558,7 @@
   <connection>
    <sender>unscatter4</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setScatter()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1574,7 +1574,7 @@
   <connection>
    <sender>unscatter5</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setScatter()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1590,7 +1590,7 @@
   <connection>
    <sender>unscatter6</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setScatter()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1606,7 +1606,7 @@
   <connection>
    <sender>unscatter7</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setScatter()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1622,7 +1622,7 @@
   <connection>
    <sender>unscatter8</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>v9ttd</receiver>
+   <receiver>ninetracklab</receiver>
    <slot>setScatter()</slot>
    <hints>
     <hint type="sourcelabel">

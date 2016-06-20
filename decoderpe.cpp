@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "ninetracklab.h"
 #include "decoderpe.h"
 #include "tapedrive.h"
 #include "blockstore.h"

@@ -8,7 +8,7 @@ QT       += core gui
 QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = qv9ttd
+TARGET = ninetracklab
 TEMPLATE = app
 
 
@@ -20,12 +20,12 @@ SOURCES +=\
     histogramdialog.cpp \
     histview.cpp \
     main.cpp \
-    mainwindow.cpp \
     preprocessdialog.cpp \
     tapedrive.cpp \
-    tapeview.cpp
+    tapeview.cpp \
+    ninetracklab.cpp
 
-HEADERS  += mainwindow.h \
+HEADERS  += \
     tapeview.h \
     tapedrive.h \
     aboutdialog.h \
@@ -34,12 +34,14 @@ HEADERS  += mainwindow.h \
     histview.h \
     decodernrz1.h \
     decoderpe.h \
-    blockstore.h
+    blockstore.h \
+    ninetracklab.h
 
-FORMS    += mainwindow.ui \
+FORMS    += \
     aboutdialog.ui \
     preprocessdialog.ui \
-    histogramdialog.ui
+    histogramdialog.ui \
+    ninetracklab.ui
 
 DISTFILES +=
 

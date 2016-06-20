@@ -1,7 +1,7 @@
 #include <QtDebug>
 #include <QTime>
 
-#include "mainwindow.h"
+#include "ninetracklab.h"
 #include "tapedrive.h"
 #include "decodernrz1.h"
 

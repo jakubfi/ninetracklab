@@ -2,7 +2,7 @@
 #include <QDebug>
 #include <QTime>
 
-#include "mainwindow.h"
+#include "ninetracklab.h"
 #include "tapedrive.h"
 
 static int defchmap[9] = { 7, 6, 5, 4, 3, 2, 1, 0, 8 };

@@ -13,15 +13,15 @@ void DBG_ON(int level);
 void DBG(int level, const char *format, ...);
 
 namespace Ui {
-class v9ttd;
+class ninetracklab;
 }
 
 // --------------------------------------------------------------------------
-class v9ttd : public QMainWindow
+class NineTrackLab : public QMainWindow
 {
 private:
 	Q_OBJECT
-	Ui::v9ttd *ui;
+	Ui::ninetracklab *ui;
 	HistogramDialog *hist;
 	TapeDrive td;
 	BlockStore bs;
@@ -42,8 +42,8 @@ private slots:
 	void on_auto_unscatter_stateChanged(int arg1);
 
 public:
-	explicit v9ttd(QWidget *parent = 0);
-	~v9ttd();
+	explicit NineTrackLab(QWidget *parent = 0);
+	~NineTrackLab();
 public slots:
 	void setDeskew();
 	void setPE();
