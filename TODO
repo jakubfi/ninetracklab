@@ -1,3 +1,46 @@
+podłączyć pasek przewijania do końca
+enumy jako typy używać
+----------------------------------------------------
+
+import tape ->
+track mapping + preproces ->
+tape type selection ->
+READY
+
+
+----------------------------------------------------
+
+user input:
+
+sampling speed  MS/s
+tape speed      in/s
+tape type       (preset)
+
+or manual:
+
+mfrd            len
+
+tape reader:
+glitch remover  width, space
+pulse pusher    width, offset
+remap channels  track:chan, ...         live
+edge sens       direction               live
+deskew          margin                  live
+unscatter find  -
+unscatter       track:deskew, ...       live
+
+nrz1:
+crc/hpar marg.  min, max
+mark marg.      min, max
+
+pe:
+preamble        min_len
+postamble       min_len
+mark            min_len
+
+
+--- OLD ----------------------------------------------------------
+
 general:
  * proper static deskewer (user-provided and/or automatic)
  * units: samples/ns/us/ms

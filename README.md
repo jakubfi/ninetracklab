@@ -1,5 +1,4 @@
-
-Virtual 9-Track Tape Drive (v9ttd) lets you decode digital images of PE/NRZ1
+Nine Track Lab lets you decode digital images of PE/NRZ1
 9-track tapes. The idea behind the tool is that you can read tapes which are
 otherwise unreadable by the drive you have access to due to tape damage
 or format incompatibility.
@@ -14,20 +13,19 @@ To get the input data you need a tape drive and a 16-bit logic analyzer that all
 stream in real time to a file.
 
 First you need to locate earliest point in your drive's signal chain where head signals are available
-in digital form. For example, in Qualstar 1052 drive that would be the 9-pin connector named ZCD.
-Notice, that there
-may also be another digital output with clock or "data ready" signals - this is not what you want.
+in digital form. For example, in Qualstar 1052 drive that would be the 9-pin connectors named ZCD and ENV.
+Both sets of signals are viable for tape dumping, although there are some limitations.
 
 Following ASCII drawing shows a general idea of where you need to tap in:
 
-            analog          analog   .----------.    .--- LOGIC ANALYZER
-            signals         signals  |  FLUX    |    |
-                                 .-->| CHANGES  |----+-----> ...
+            analog          analog   .----------.            .--- LOGIC ANALYZER
+            signals         signals  |  FLUX    |            |
+                                 .-->| CHANGES  |------------+-----> ...
     .------.     .------------.  |   | DETECTOR |
     |      |     |            |  |   `----------'  digital
-    | HEAD |---->| AMPLIFIERS |--+   .----------.  signals
-    |      |     |            |  |   |  CLOCK   |
-    `------'     `------------'  `-->| FORMING  |----------> ...
+    | HEAD |---->| AMPLIFIERS |--+   .----------.  signals   .--- LOGIC ANALYZER
+    |      |     |            |  |   |  CLOCK   |            |
+    `------'     `------------'  `-->| FORMING  |------------+-----> ...
                                      `----------'
 
 Connect the logic analyzer to all 9 signal pins - the order doesn't matter, tracks can be later reordered with
@@ -35,7 +33,7 @@ tool's '-t' option. Now you need to put the drive in a "free-running" mode, whic
 to move over the heads with a constant speed and start recording logic analyzer output.
 
 Note that this is not the only way of doing it. You may as well sample the analog signals,
-digitize it on your own and prepare an image file readable by v9ttd.
+digitize it on your own and prepare an image file readable by the software.
 
 ## Sampling frequency
 
@@ -49,24 +47,25 @@ This translates to max 160kHz signal for a tape running at 50in/s.
 1MS/s would be the lowest "safe" practical sampling frequency, at which resulting dump file
 is 1GiB in size.
 
-# Building v9ttd
+# Building Nine Track Lab
 
-To build v9ttd from sources you'll need:
+To build Nine Track Lab from sources you'll need:
 
-* cmake
+* Qt >= 4
+* qmake
 * GNU make
 
 ```
 mkdir build
 cd build
-cmake ..
+qmake ../ninetracklab
 make
 make install
 ```
 
 # Analyzing tape images
 
-v9ttd input is a 16-bit LE binary file, where each word contains all 9 bits
+Input is a 16-bit LE binary file, where each word contains all 9 bits
 of track signal in a given point in time. In other words: each 16-bit value is a
 tape row sample. This is a format used by Saleae software when exporting data to a binary file:
 
@@ -83,7 +82,7 @@ http://support.saleae.com/hc/en-us/articles/208667306-Binary-data-export-format-
 * **-s skew** - Max allowed inter-track skew (0.0 - 0.5)
 * **-S** - Calculate and print pulse statistics
 
-## Running v9ttd
+## Running Nine Track Lab
 
 v9ttd can run in one of two modes:
 
