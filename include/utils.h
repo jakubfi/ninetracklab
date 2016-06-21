@@ -18,13 +18,15 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+#include <inttypes.h>
+
 #include "vtape.h"
 
 void VTDEBUG_ON();
 void VTDEBUG(int level, char *format, ...);
 int term_width();
 void print_stats(struct vtape *t);
-int parity9(int x);
+int parity9(uint8_t x);
 
 #endif
 

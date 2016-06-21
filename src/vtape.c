@@ -139,7 +139,7 @@ struct vtape * vtape_open(char *filename, int chmap[9], int downsample, int sdes
 	// remap channels so tracks are in order: p, 7, 6, 5, 4, 3, 2, 1, 0
 	// downsample data
 	// apply static deskew
-	for (int i=100 ; i<t->sample_count ; i++) {
+	for (int i=0 ; i<t->sample_count ; i++) {
 		int d_o = 0;
 		for (int c=0 ; c<9 ; c++) {
 			int deskewed_position = i - sdeskew[chmap[8-c]];
@@ -226,11 +226,13 @@ int vtape_get_pulse(struct vtape *t, int *pulse_start, int deskew_max)
 		if (t->pos >= t->sample_count-1) {
 			return VT_EOT;
 		}
-		pulse = t->data[t->pos] ^ t->data[t->pos+1];
+		//pulse = t->data[t->pos] ^ t->data[t->pos+1];
+		pulse = (t->data[t->pos] ^ t->data[t->pos+1]) & t->data[t->pos+1];
 		t->pos++;
 	} while (!pulse);
 
 	*pulse_start = t->pos;
+	int actual_deskew = t->pos;
 
 	// as long as we are in the deskew window
 	while (deskew_max > 0) {
@@ -239,7 +241,8 @@ int vtape_get_pulse(struct vtape *t, int *pulse_start, int deskew_max)
 		}
 
 		// check next sample for edges
-		next_pulse = t->data[t->pos] ^ t->data[t->pos+1];
+		//next_pulse = t->data[t->pos] ^ t->data[t->pos+1];
+		next_pulse = (t->data[t->pos] ^ t->data[t->pos+1]) & t->data[t->pos+1];
 
 		// if signal bounces back in the deskew window, treat it as a separete edge
 		deskew_bounced = pulse & next_pulse;
@@ -251,11 +254,15 @@ int vtape_get_pulse(struct vtape *t, int *pulse_start, int deskew_max)
 		// glue edges in the deskew window
 		pulse |= next_pulse;
 
+		if (next_pulse) {
+			actual_deskew = t->pos;
+		}
+
 		deskew_max--;
 		t->pos++;
 	}
 
-	VTDEBUG(9, "deskewed pulse %i @ %i deskew len %i\n", pulse, *pulse_start, t->pos - *pulse_start);
+	VTDEBUG(9, "deskewed pulse %i @ %i deskew len %i\n", pulse, *pulse_start, actual_deskew - *pulse_start);
 
 	return pulse;
 }

@@ -249,7 +249,8 @@ int main(int argc, char **argv)
 		}
 	}
 	printf("\n");
-	int sdeskew[9] = { 3, 6, 10, 24, 0, 42, 2, 33, 16 };
+	//int sdeskew[9] = { 3, 6, 10, 24, 0, 42, 2, 33, 16 };
+	int sdeskew[9] = { 0,0,0,0,0,0,0,0,0 };
 	struct vtape *t = vtape_open(cfg->input_name, cfg->chmap, cfg->downsample, sdeskew);
 	printf("Loaded %i samples (downsample factor: 1/%i)\n", t->sample_count, cfg->downsample);
 
@@ -300,11 +301,39 @@ int main(int argc, char **argv)
 			ch->len
 		);
 		if (ch->type == C_BLOCK) {
+			int crc = nrz1_crc(ch->data, ch->len);
+			int hparity = 0;
+			int vparity = 0;
 			printf("---- Block dump ---------------------------------------\n");
+			int count = 0;
 			for (int i=0; i< ch->len ; i++) {
-				printf("%c", ch->data[i]);
+				hparity ^= ch->data[i];
+				int vp = !(parity9(ch->data[i]) ^ (ch->data[i]>>8));
+				vparity += vp;
+				count++;
+				printf("%2x%s",
+					ch->data[i]&0xff,
+					vp ? "*": " "
+				);
+				if (!(count%32)) {
+					printf("\n %4i: ", i);
+				}
 			}
-			printf("\n-------------------------------------------------------\n");
+			if (count%32) {
+				printf("\n");
+			}
+			printf("-------------------------------------------------------\n");
+			hparity ^= ch->crc;
+			printf("%5i bytes, CRC: %s (%i/%i), HPAR: %s (%i/%i), VPAR: %i errors\n",
+				ch->len,
+				crc == ch->crc ? "OK" : "FAILED",
+				crc,
+				ch->crc,
+				ch->hparity == hparity ? "OK" : "FAILED",
+				hparity,
+				ch->hparity,
+				vparity
+			);
 		}
 
 		ch = ch->next;

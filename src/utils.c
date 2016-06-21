@@ -89,11 +89,12 @@ void print_stats(struct vtape *t)
 }
 
 // --------------------------------------------------------------------------
-int parity9(int x)
+int parity9(uint8_t x)
 {
-	for (int d=8 ; d>0 ; d>>=2) {
-		x ^= x >> d;
-	}
+	x ^= x >> 8;
+	x ^= x >> 4;
+	x ^= x >> 2;
+	x ^= x >> 1;
 	return x & 1;
 }
 

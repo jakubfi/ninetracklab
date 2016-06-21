@@ -22,6 +22,7 @@
 
 #include "vtape.h"
 
+uint16_t nrz1_crc(uint16_t *data, int size);
 int nrz1_get_block(struct vtape *t, uint16_t *buf);
 int nrz1_analyze(struct vtape *t);
 

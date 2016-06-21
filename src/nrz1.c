@@ -27,6 +27,31 @@
 #define DEFAULT_BUF_SIZE 1 * 1024 * 1024
 
 // --------------------------------------------------------------------------
+uint16_t nrz1_crc(uint16_t *data, int size)
+{
+	int i = 0;
+	uint16_t reg = 0;
+	int bit;
+
+	while (i < size) {
+		reg ^= data[i++];
+again:
+		bit = reg & 1;
+		reg >>= 1;
+		reg |= bit << 8;
+		if (bit == 1) {
+			reg ^= 0b000111100;
+		}
+
+		if ((i == size) && (reg & 0b100000000)) {
+			goto again;
+		}
+	}
+
+	return reg ^ 0b111010111;
+}
+
+// --------------------------------------------------------------------------
 int nrz1_get_block(struct vtape *t, uint16_t *buf)
 {
 	int pulse_start;
@@ -49,11 +74,9 @@ int nrz1_get_block(struct vtape *t, uint16_t *buf)
 		int time_delta = pulse_start - last_pulse_start;
 
 		// data pulse
-		if ((rowcount == 0) || ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max))) {
-			VTDEBUG(5, "block data: 0x%04x (%c), %i\n", pulse, pulse&0xff, time_delta);
-			buf[rowcount++] = pulse;
+		//if ((rowcount == 0) || ((time_delta >= t->bpl_min) && (time_delta <= t->bpl_max))) {
 		// hparity and crc pulse
-		} else if ((time_delta >= t->bpl4_min) && (time_delta <= t->bpl4_max)) {
+		if ((rowcount > 1) && (time_delta >= t->bpl4_min)) && (time_delta <= t->bpl4_max) {
 			if (got_crc) {
 				VTDEBUG(3, "hparity: 0x%04x, %i\n", pulse, time_delta);
 				hparity = pulse;
@@ -67,14 +90,21 @@ int nrz1_get_block(struct vtape *t, uint16_t *buf)
 		// tape mark
 		} else if (
 			(pulse == 0b10100100)
-			&& (time_delta >= t->bpl8_min) && (time_delta <= t->bpl8_max
-			&& (rowcount == 1) && (buf[rowcount-1] == 0b10100100))
+			&& (time_delta >= t->bpl8_min) && (time_delta <= t->bpl8_max)
+			&& (rowcount == 1) && (buf[rowcount-1] == 0b10100100)
 		) {
 			VTDEBUG(3, "tape mark: 0x%04x, %i\n", pulse, time_delta);
 			return VT_OK;
 		// bad pulse
 		} else {
-			VTDEBUG(2, "bad pulse: 0x%04x, %i\n", pulse, time_delta);
+			// discard too long pulses
+			if ((rowcount == 1) && (time_delta >= t->bpl8_max)) {
+				VTDEBUG(2, "discarding last pulse (too long)\n");
+				rowcount = 0;
+			}
+			VTDEBUG(5, "block data (row %i): 0x%04x (%c), %i\n", rowcount, pulse, pulse&0xff, time_delta);
+			buf[rowcount++] = pulse;
+			//VTDEBUG(2, "bad pulse: 0x%04x, %i\n", pulse, time_delta);
 		}
 
 		last_pulse_start = pulse_start;
