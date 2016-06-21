@@ -1,0 +1,1226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PreprocessDialog</class>
+ <widget class="QDialog" name="PreprocessDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>562</width>
+    <height>407</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Tape image import</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QGroupBox" name="groupBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="title">
+        <string>Track mapping</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>1000</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Tape track</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="track0_label">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;0&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="track0">
+          <property name="currentIndex">
+           <number>7</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Channel 0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 6</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 7</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 9</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 10</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 11</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 13</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 14</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 15</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>1000</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Input channel</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="track1_label">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QComboBox" name="track2">
+          <property name="currentIndex">
+           <number>5</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Channel 0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 6</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 7</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 9</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 10</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 11</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 13</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 14</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 15</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QComboBox" name="track1">
+          <property name="currentIndex">
+           <number>6</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Channel 0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 6</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 7</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 9</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 10</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 11</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 13</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 14</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 15</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="track2_label">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;2&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="1">
+         <widget class="QComboBox" name="track7">
+          <item>
+           <property name="text">
+            <string>Channel 0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 6</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 7</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 9</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 10</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 11</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 13</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 14</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 15</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QComboBox" name="track3">
+          <property name="currentIndex">
+           <number>4</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Channel 0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 6</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 7</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 9</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 10</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 11</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 13</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 14</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 15</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="track3_label">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QComboBox" name="track4">
+          <property name="currentIndex">
+           <number>3</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Channel 0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 6</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 7</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 9</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 10</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 11</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 13</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 14</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 15</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="track4_label">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;4&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="track5_label">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;5&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1">
+         <widget class="QComboBox" name="track6">
+          <property name="currentIndex">
+           <number>1</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Channel 0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 6</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 7</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 9</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 10</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 11</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 13</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 14</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 15</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="QComboBox" name="track5">
+          <property name="currentIndex">
+           <number>2</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Channel 0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 6</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 7</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 9</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 10</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 11</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 13</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 14</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 15</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="7" column="0">
+         <widget class="QLabel" name="track6_label">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;6&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="0">
+         <widget class="QLabel" name="track7_label">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;7&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="0">
+         <widget class="QLabel" name="track8_label">
+          <property name="text">
+           <string>Parity</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="1">
+         <widget class="QComboBox" name="track8">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="currentIndex">
+           <number>9</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Channel 0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 6</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 7</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 9</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 10</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 11</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 12</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 13</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 14</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Channel 15</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>Input format</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="1" column="0" colspan="3">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Sampling speed (MS/s)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QDoubleSpinBox" name="sampling_speed">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>100.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.500000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1" colspan="3">
+           <widget class="QComboBox" name="tape_type">
+            <item>
+             <property name="text">
+              <string>(manual)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>NRZi 800BPI (800fcpi)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>PE 1600BPI (3200fcpi)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="8" column="2" colspan="2">
+           <widget class="QSpinBox" name="bpl">
+            <property name="maximum">
+             <number>1000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>BPL (samples):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Tape type</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Tape speed (in/s)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QSpinBox" name="tape_speed">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>25</number>
+            </property>
+            <property name="maximum">
+             <number>200</number>
+            </property>
+            <property name="value">
+             <number>50</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_4">
+         <property name="title">
+          <string>Glitch remover</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Glitch max length:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="glitch_max">
+            <property name="maximum">
+             <number>10</number>
+            </property>
+            <property name="value">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Glitch edge distance:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="glitch_distance">
+            <property name="maximum">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="glitch_single">
+            <property name="text">
+             <string>Remove single-sample glitches</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>Pulse realignment</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Max pulse length:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="realign_margin">
+            <property name="value">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Push forward:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="realign_push">
+            <property name="value">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>track0</tabstop>
+  <tabstop>track1</tabstop>
+  <tabstop>track2</tabstop>
+  <tabstop>track3</tabstop>
+  <tabstop>track4</tabstop>
+  <tabstop>track5</tabstop>
+  <tabstop>track6</tabstop>
+  <tabstop>track7</tabstop>
+  <tabstop>track8</tabstop>
+  <tabstop>realign_margin</tabstop>
+  <tabstop>realign_push</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>PreprocessDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>207</x>
+     <y>501</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>207</x>
+     <y>260</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>PreprocessDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>207</x>
+     <y>501</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>207</x>
+     <y>260</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
