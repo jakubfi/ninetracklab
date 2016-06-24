@@ -45,14 +45,11 @@ int DecoderNRZ1::get_block(TapeDrive &td, BlockStore &bs)
 	int d_hparity = 0;
 	unsigned block_start = td.get_pos();
 
-	DBG(1, "nrz1_get_block");
-
 	QList<TapeEvent> e;
 
 	while (1) {
 		int pulse = td.read(&pulse_start, deskew, edge_sens);
 		if (pulse < 0) {
-			DBG(1, "tape read error");
 			return pulse;
 		}
 
@@ -64,7 +61,6 @@ int DecoderNRZ1::get_block(TapeDrive &td, BlockStore &bs)
 		if ((rowcount > 1) && (time_delta >= bpl4_min) && (time_delta <= bpl4_max)) {
 			// hparity
 			if (b_crc != -1) {
-				DBG(3, "hparity: 0x%04x, %i", pulse, time_delta);
 				e.append(TapeEvent(pulse_start, C_HPARITY, ""));
 				TapeChunk c(F_NRZ1, td.get_pos()-block_start, buf, rowcount, e);
 				c.b_hparity = pulse;
@@ -75,7 +71,6 @@ int DecoderNRZ1::get_block(TapeDrive &td, BlockStore &bs)
 				return VT_OK;
 			// crc
 			} else {
-				DBG(3, "crc: 0x%04x, %i", pulse, time_delta);
 				b_crc = pulse;
 				d_hparity ^= pulse;
 				e.append(TapeEvent(pulse_start, C_CRC, ""));
@@ -83,7 +78,6 @@ int DecoderNRZ1::get_block(TapeDrive &td, BlockStore &bs)
 		// tape mark
 		} else if ((pulse == tape_mark) && (time_delta >= bpl8_min) && (time_delta <= bpl8_max) && (rowcount == 1) && (buf[rowcount-1] == tape_mark)) {
 			qDebug() << "tape mark";
-			DBG(3, "tape mark: 0x%04x, %i", pulse, time_delta);
 			e.append(TapeEvent(pulse_start, C_ROW, ""));
 			TapeChunk c(F_NRZ1, td.get_pos()-block_start, e);
 			bs.addChunk(block_start, c);
@@ -95,7 +89,6 @@ int DecoderNRZ1::get_block(TapeDrive &td, BlockStore &bs)
 				block_start = pulse_start;
 			// discard too long pulses
 			} else if ((rowcount == 1) && (time_delta >= bpl4_min)) {
-				DBG(2, "skipping stray pulse");
 				rowcount = 0;
 				d_hparity = 0;
 				e.clear();
@@ -108,10 +101,8 @@ int DecoderNRZ1::get_block(TapeDrive &td, BlockStore &bs)
 			} else {
 				e.append(TapeEvent(pulse_start, C_ROW, QString((char)pulse&0xff)));
 			}
-			DBG(5, "block data (row %i): 0x%04x (%c), %i", rowcount, pulse, pulse&0xff, time_delta);
 			buf[rowcount] = pulse;
 			rowcount++;
-			//VTDEBUG(2, "bad pulse: 0x%04x, %i", pulse, time_delta);
 		}
 
 		last_pulse_start = pulse_start;
@@ -124,16 +115,17 @@ int DecoderNRZ1::get_block(TapeDrive &td, BlockStore &bs)
 // --------------------------------------------------------------------------
 int DecoderNRZ1::run(TapeDrive &td, BlockStore &bs)
 {
-	td.rewind();
 	QTime myTimer;
 	myTimer.start();
+
+	td.rewind();
 	qDebug() << "deskew:" << deskew << "edge_sens:" << edge_sens << "bpl4:" << bpl4_min << "-" << bpl4_max << "bpl8:" << bpl8_min << "-" << bpl8_max;
 	while (get_block(td, bs) == VT_OK) {
 
 	}
-	int nMilliseconds = myTimer.elapsed();
-	qDebug() << nMilliseconds;
-	qDebug() << "nrz loop fin";
+	int ms = myTimer.elapsed();
+	qDebug() << "nrz loop done in" << ms << "ms";
+
 	return VT_OK;
 }
 

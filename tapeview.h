@@ -14,7 +14,10 @@ class TapeView : public QWidget
 {
 private:
 	Q_OBJECT
-	int len;
+	TapeDrive *td;
+	BlockStore *bs;
+	TDConf *cfg;
+
 	int offset;
 	double scale;
 	QPoint mouse_pos;
@@ -24,10 +27,9 @@ private:
 	QPoint mouse_measure_start, mouse_measure_end;
 	QPoint mouse_edit_start;
 	int ruler_height;
-	TapeDrive *td;
-	BlockStore *bs;
 	int zooming;
 	int measuring;
+	int in_edit;
 
 	QPen pen_wave;
 	QPen pen_edge;
@@ -47,15 +49,12 @@ private:
 	QBrush brush_measure;
 	QBrush brush_mark;
 
-	int edge_sens;
 	int disp_mouse;
 	int disp_edges;
 	int disp_regions;
 	int disp_signals;
 	int disp_events;
 	int disp_bytes;
-
-	int in_edit;
 
 	inline long toSample(int d) { return offset + d*scale; }
 	inline long toSampleLen(int d) { return d*scale; }
@@ -88,7 +87,9 @@ protected:
 
 public:
 	explicit TapeView(QWidget *parent = 0);
-	void ConnectDataSources(TapeDrive *tapedrive, BlockStore *blockstore);
+	void useTapeDrive(TapeDrive *tapedrive) { td = tapedrive; }
+	void useBlockStore(BlockStore *blockstore) { bs = blockstore; }
+	void useConfig(TDConf *c) { cfg = c; }
 	void zoomRegion(int left, int right);
 	void zoomAround(int pos, double scale);
 
@@ -104,7 +105,6 @@ public slots:
 	void zoomIn();
 	void zoomOut();
 	void edit(bool v) { in_edit = v; update(); }
-	void setEdgeSens(int e) { edge_sens = e; update(); }
 	void scroll(int pos);
 
 signals:

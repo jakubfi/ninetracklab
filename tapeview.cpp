@@ -18,7 +18,6 @@ TapeView::TapeView(QWidget *parent) : QWidget(parent)
 	offset = 0;
 	scale = 1;
 	ruler_height = 20;
-	edge_sens = EDGE_ANY;
 	zooming = 0;
 	measuring = 0;
 	disp_edges = 1;
@@ -49,12 +48,6 @@ TapeView::TapeView(QWidget *parent) : QWidget(parent)
 	pen_measure = QPen(QColor(255, 255, 235, 255), 1);
 	brush_measure = QBrush(QColor(255, 255, 235, 255));
 	brush_mark = QBrush(QColor(100, 100, 225, 50));
-}
-// --------------------------------------------------------------------------
-void TapeView::ConnectDataSources(TapeDrive *tapedrive, BlockStore *blockstore)
-{
-	td = tapedrive;
-	bs = blockstore;
 }
 
 // --------------------------------------------------------------------------
@@ -87,7 +80,7 @@ void TapeView::correctView()
 // --------------------------------------------------------------------------
 void TapeView::zoomRegion(int left, int right)
 {
-	if (!td || !td->is_loaded()) return;
+	if (!td || !td->tape_loaded()) return;
 
 	offset = left;
 	scale = (double) (right-left) / geometry().width();
@@ -98,7 +91,7 @@ void TapeView::zoomRegion(int left, int right)
 // --------------------------------------------------------------------------
 void TapeView::zoomAround(int pos, double scale)
 {
-	if (!td || !td->is_loaded()) return;
+	if (!td || !td->tape_loaded()) return;
 
 	this->scale = scale;
 	offset = pos - toSampleLen(mouse_pos.x());
@@ -133,7 +126,7 @@ void TapeView::zoomOut()
 // --------------------------------------------------------------------------
 void TapeView::wheelEvent(QWheelEvent* e)
 {
-	if (!td || !td->is_loaded()) return;
+	if (!td || !td->tape_loaded()) return;
 	if (in_edit) return;
 
 	if (e->delta() < 0) {
@@ -169,7 +162,7 @@ void TapeView::signalEdit(QPoint from, QPoint pos)
 // --------------------------------------------------------------------------
 void TapeView::mousePressEvent(QMouseEvent *event)
 {
-	if (!td || !td->is_loaded()) return;
+	if (!td || !td->tape_loaded()) return;
 
 	if (in_edit) {
 		mouse_edit_start = event->pos();
@@ -194,7 +187,7 @@ void TapeView::mousePressEvent(QMouseEvent *event)
 // --------------------------------------------------------------------------
 void TapeView::mouseReleaseEvent(QMouseEvent *event)
 {
-	if (!td || !td->is_loaded()) return;
+	if (!td || !td->tape_loaded()) return;
 	if (in_edit) return;
 
 	if (!(event->buttons() & Qt::LeftButton)) {
@@ -249,7 +242,7 @@ void TapeView::wave_drag(QMouseEvent *event)
 // --------------------------------------------------------------------------
 void TapeView::mouseMoveEvent(QMouseEvent *event)
 {
-	if (!td || !td->is_loaded()) return;
+	if (!td || !td->tape_loaded()) return;
 
 	if (in_edit) {
 		if (event->buttons() & Qt::LeftButton) {
@@ -339,11 +332,11 @@ void TapeView::drawTracks(QPainter &painter, int ch_height)
 			e1 = td->peek(d);
 			int delta = e0 ^ e1;
 			changed_edges |= delta;
-			if (edge_sens == EDGE_ANY) {
+			if (cfg->edge_sens == EDGE_ANY) {
 				sensed_edges |= delta;
-			} else if (edge_sens == EDGE_RISING) {
+			} else if (cfg->edge_sens == EDGE_RISING) {
 				sensed_edges |= delta & e1;
-			} else if (edge_sens == EDGE_FALLING) {
+			} else if (cfg->edge_sens == EDGE_FALLING) {
 				sensed_edges |= delta & e0;
 			}
 			if (changed_edges == 0b111111111) {
@@ -541,7 +534,7 @@ void TapeView::paintEvent(QPaintEvent *event)
 
 	drawRuler(painter);
 
-	if (td && td->is_loaded()) {
+	if (td && td->tape_loaded()) {
 		if (disp_signals || disp_edges) {
 			drawTracks(painter, ch_height);
 		}

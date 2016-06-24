@@ -40,20 +40,13 @@ int DecoderPE::search_mark(int pulse, int pulse_start)
 		// ...and it's on time
 		&& ((time_delta >= bpl_min) && (time_delta <= bpl_max))
 	) {
-		if (mark_count == 0) {
-			DBG(4, "mark start\n");
-		} else {
-			DBG(5, "mark_count++\n");
-		}
 		mark_count++;
 		last_result = B_CONT;
 	// it's not the mark
 	} else {
 		if (mark_count > mark_pulses_min * 2) {
-			DBG(4, "mark done\n");
 			last_result = B_DONE;
 		} else {
-			DBG(4, "mark fail\n");
 			last_result = B_FAIL;
 		}
 	}
@@ -81,25 +74,19 @@ int DecoderPE::search_preamble(int pulse, int pulse_start)
 		(pulse == 0b111111101) || (pulse == 0b110111111) || (pulse == 0b111111011) || (pulse == 0b111011111) ||
 		(pulse == 0b111110111) || (pulse == 0b111101111);
 
-	DBG(5, "pulse: %i @ %i len: %i\n", pulse, pulse_start, time_delta);
-
 	// found sync pulse...
 	if (is_sync) {
 		// ...a short one = 0 => start or continue searching
 		if ((time_delta >= bpl_min) && (time_delta <= bpl_max)) {
-			DBG(5, "sync_pulses++\n");
 			zero_count++;
 			last_result = B_CONT;
 		// ...a long one = 1 => end of preamble if we have > 25 "0" pulses already
 		} else if ((zero_count > sync_pulses_min * 2) && (time_delta >= bpl2_min) && (time_delta <= bpl2_max)) {
-			DBG(4, "sync done\n");
 			last_result = B_DONE;
 		} else {
-			DBG(4, "sync fail (pulse length)\n");
 			last_result = B_FAIL;
 		}
 	} else {
-			DBG(4, "sync fail (not sync pulse)\n");
 		last_result = B_FAIL;
 	}
 
@@ -113,8 +100,6 @@ int DecoderPE::find_burst(TapeDrive &td, int *burst_start)
 	int mark_start = 0;
 	int preamble_result = B_FAIL;
 	int mark_result = B_FAIL;
-
-	DBG(3, "find (any) burst\n");
 
 	while (1) {
 		int pulse_start;
@@ -164,8 +149,6 @@ int DecoderPE::get_row(TapeDrive &td, quint16 *data)
 		int time_delta = pulse_start - last_pulse_start;
 		last_pulse_start = pulse_start;
 
-		DBG(5, "data pulse: %i @ %i len %i\n", pulse, pulse_start, time_delta);
-
 		if ((time_delta >= bpl_min) && (time_delta <= bpl_max)) {
 			*data ^= pulse;
 			row_ready++;
@@ -194,17 +177,14 @@ int DecoderPE::get_data(TapeDrive &td, BlockStore &bs)
 		if (res < 0) {
 			return res;
 		}
-		DBG(5, "data: %x (%c)\n", data, data);
 
 		buf[row_count++] = data;
 
 		// start of postamble
 		if ((postamble_rows <= 0) && (data == 0b0000000111111111)) {
-			DBG(4, "postamble start\n");
 			postamble_rows++;
 		// inside postamble
 		} else if ((postamble_rows >= 1) && (data == 0)) {
-			DBG(5, "postamble++\n");
 			postamble_rows++;
 		// false positive
 		} else {
@@ -213,7 +193,6 @@ int DecoderPE::get_data(TapeDrive &td, BlockStore &bs)
 		if (postamble_rows >= sync_pulses_min+1) {
 			// cut postamble
 			row_count -= postamble_rows;
-			DBG(4, "postamble done\n");
 			break;
 		}
 	}
@@ -227,8 +206,6 @@ int DecoderPE::get_block(TapeDrive &td, BlockStore &bs)
 	int burst_start = 0;
 	int res;
 
-	DBG(1, "pe_get_block()\n");
-
 	res = find_burst(td, &burst_start);
 	if (res == VT_EOT) {
 		//vtape_add_eot(t, t->pos);
@@ -236,18 +213,11 @@ int DecoderPE::get_block(TapeDrive &td, BlockStore &bs)
 	} else if (res == VT_EPULSE) {
 		return VT_EPULSE;
 	} else if (res == C_BLOCK) {
-		DBG(3, "Got preamble, reaing block data\n");
 		res = get_data(td, bs);
 		if (res >= 0) {
 			//vtape_add_block(t, F_PE, burst_start, t->pos - burst_start, buf, res, 0, 0);
-			DBG(2, "Block data: '");
-			for (int i=0 ; i<res ; i++) {
-				//DBG(2, "%c", t->chunk_last->data[i] & 0xff);
-			}
-			DBG(2, "'\n");
 		}
 	} else if (res == C_MARK) {
-		DBG(3, "Got tape mark\n");
 		//vtape_add_mark(t, F_PE, burst_start, t->pos - burst_start);
 	}
 

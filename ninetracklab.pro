@@ -23,7 +23,8 @@ SOURCES +=\
     preprocessdialog.cpp \
     tapedrive.cpp \
     tapeview.cpp \
-    ninetracklab.cpp
+    ninetracklab.cpp \
+    tdconf.cpp
 
 HEADERS  += \
     tapeview.h \
@@ -35,7 +36,8 @@ HEADERS  += \
     decodernrz1.h \
     decoderpe.h \
     blockstore.h \
-    ninetracklab.h
+    ninetracklab.h \
+    tdconf.h
 
 FORMS    += \
     aboutdialog.ui \

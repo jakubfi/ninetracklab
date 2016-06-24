@@ -8,48 +8,19 @@
 #include "preprocessdialog.h"
 #include "histogramdialog.h"
 
-/*
- * Debug levels:
- *  1 - top functions
- *  2 - pulse search failures
- *  3 - main segments notifications (mark, pulse)
- *  4 - inner-segment sections
- *  5 - inner-segment details
- *  6 -
- *  7 -
- *  8 -
- *  9 - deskewer vtape_get_pulse()
- */
-
-static int debug_level;
-
-// -----------------------------------------------------------------------
-void DBG_ON(int level)
-{
-	debug_level = level;
-}
-
-// -----------------------------------------------------------------------
-void DBG(int level, const char *format, ...)
-{
-	if (debug_level < level) return;
-
-	va_list ap;
-	qDebug() << QString().vsprintf(format, ap);
-
-}
-
 // --------------------------------------------------------------------------
 NineTrackLab::NineTrackLab(QWidget *parent) : QMainWindow(parent), ui(new Ui::ninetracklab), td(this), bs(this)
 {
-	debug_level = 0;
 	ui->setupUi(this);
-	ui->tapeview->ConnectDataSources(&td, &bs);
+	ui->tapeview->useTapeDrive(&td);
+	ui->tapeview->useBlockStore(&bs);
+	ui->tapeview->useConfig(&cfg);
 	hist = new HistogramDialog(this, &td);
-	setDeskew();
 	on_edge_sens_currentIndexChanged(ui->edge_sens->currentIndex());
 	setNRZ1();
 	setPE();
+	td.useConfig(&cfg);
+	updateUiFromConfig();
 }
 
 // --------------------------------------------------------------------------
@@ -60,16 +31,55 @@ NineTrackLab::~NineTrackLab()
 }
 
 // --------------------------------------------------------------------------
+void NineTrackLab::updateUiFromConfig()
+{
+	// Input Signal
+	ui->format->setCurrentIndex(cfg.format == F_NRZ1 ? 0 : 1);
+	switch (cfg.edge_sens) {
+	case EDGE_ANY:
+	case EDGE_NONE:
+		ui->edge_sens->setCurrentIndex(2);
+		break;
+	case EDGE_FALLING:
+		ui->edge_sens->setCurrentIndex(1);
+		break;
+	case EDGE_RISING:
+		ui->edge_sens->setCurrentIndex(0);
+		break;
+	}
+	ui->bpl->setValue(cfg.bpl);
+
+	// Scatter correction
+	ui->unscatter_pull->setValue(1);
+	ui->unscatter_est_width->setValue(1);
+	for (int i=0 ; i<9 ; i++) {
+		QSpinBox *ch = findChild<QSpinBox*>(QString("unscatter%1").arg(i));
+		ch->setValue(cfg.unscatter[i]);
+	}
+	ui->deskew->setValue(cfg.deskew);
+
+	// PE
+
+	// NRZ1
+}
+
+// --------------------------------------------------------------------------
+// --- actions --------------------------------------------------------------
+// --------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------
 void NineTrackLab::on_actionImport_triggered()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, tr("Import tape image"), "", tr("Binary files (*.bin);;All files (*)"));
 
-	PreprocessDialog pp(this, &td);
-	pp.exec();
-
-	td.load(fileName);
-	setWindowTitle(QString("Nine Track Lab - " + fileName.section("/",-1,-1)));
-	td.preprocess();
+	if (!fileName.isEmpty()) {
+		td.load(fileName);
+		setWindowTitle(QString("Nine Track Lab - " + fileName.section("/",-1,-1)));
+		PreprocessDialog pp(this, &cfg);
+		pp.exec();
+		td.preprocess();
+		updateUiFromConfig();
+	}
 }
 
 // -----------------------------------------------------------------------
@@ -82,8 +92,10 @@ void NineTrackLab::on_actionAbout_triggered()
 // -----------------------------------------------------------------------
 void NineTrackLab::on_actionPreprecessing_triggered()
 {
-	PreprocessDialog pp(this, &td);
+	PreprocessDialog pp(this, &cfg);
 	pp.exec();
+	td.preprocess();
+	updateUiFromConfig();
 }
 
 // -----------------------------------------------------------------------
@@ -129,11 +141,16 @@ void NineTrackLab::on_actionStart_analysis_triggered()
 }
 
 // -----------------------------------------------------------------------
-void NineTrackLab::setDeskew()
+void NineTrackLab::on_actionUnscatter_triggered()
 {
-	pe.set_deskew(ui->deskew->value());
-	nrz1.set_deskew(ui->deskew->value());
+	td.unscatter();
+	ui->tapeview->update();
+	updateUiFromConfig();
 }
+
+// -----------------------------------------------------------------------
+// --- param changes -----------------------------------------------------
+// -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------
 void NineTrackLab::setPE()
@@ -153,9 +170,22 @@ void NineTrackLab::setNRZ1()
 // -----------------------------------------------------------------------
 void NineTrackLab::on_edge_sens_currentIndexChanged(int edge_sens)
 {
+	switch (edge_sens) {
+	case 0:
+		cfg.edge_sens = EDGE_RISING;
+		break;
+	case 1:
+		cfg.edge_sens = EDGE_FALLING;
+		break;
+	default:
+		cfg.edge_sens = EDGE_ANY;
+		break;
+	}
+	ui->tapeview->update();
+
 	pe.set_edge_sens(edge_sens+1);
 	nrz1.set_edge_sens(edge_sens+1);
-	ui->tapeview->setEdgeSens(edge_sens+1);
+
 }
 
 // -----------------------------------------------------------------------
@@ -163,25 +193,8 @@ void NineTrackLab::setScatter()
 {
 	QSpinBox *ch = (QSpinBox*) QObject::sender();
 	int id = ch->objectName().replace("unscatter", "").toInt();
-	td.set_scatter(id, ch->value());
+	cfg.unscatter[id] = ch->value();
 	ui->tapeview->update();
-}
-
-// -----------------------------------------------------------------------
-void NineTrackLab::updateScatter()
-{
-	for (int i=0 ; i<9 ; i++) {
-		QSpinBox *ch = findChild<QSpinBox*>(QString("unscatter%1").arg(i));
-		ch->setValue(td.get_scatter(i));
-	}
-}
-
-// -----------------------------------------------------------------------
-void NineTrackLab::on_actionUnscatter_triggered()
-{
-	td.unscatter();
-	ui->tapeview->update();
-	updateScatter();
 }
 
 // -----------------------------------------------------------------------
@@ -191,4 +204,16 @@ void NineTrackLab::on_auto_unscatter_stateChanged(int arg)
 		QSpinBox *ch = findChild<QSpinBox*>(QString("unscatter%1").arg(i));
 		ch->setDisabled(arg);
 	}
+	ui->unscatter_pull->setEnabled(arg);
+	ui->unscatter_est_width->setEnabled(arg);
+	cfg.unscatter_auto = arg;
 }
+
+// -----------------------------------------------------------------------
+void NineTrackLab::on_deskew_valueChanged(int arg)
+{
+	cfg.deskew = arg;
+	pe.set_deskew(arg);
+	nrz1.set_deskew(arg);
+}
+

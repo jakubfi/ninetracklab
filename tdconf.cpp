@@ -1,0 +1,96 @@
+#include <QtGlobal>
+#include <QDebug>
+#include "tdconf.h"
+
+static int defchmap[9] = { 7, 6, 5, 4, 3, 2, 1, 0, 8 };
+
+// --------------------------------------------------------------------------
+TDConf::TDConf()
+{
+	format = F_NRZ1;
+	bpi = 800;
+	sampling_speed = 1.0f;
+	tape_speed = 50;
+
+	updateFctob();
+
+	qCopy(defchmap, defchmap+9, chmap);
+	deskew = bpl * 0.6;
+	edge_sens = EDGE_RISING;
+
+	glitch_single = true;
+	glitch_max = 2;
+	glitch_distance = 2;
+	realign_margin = 0;
+	realign_push = 0;
+
+	qFill(unscatter, unscatter+9, 0);
+	qFill(unscatter_fixed, unscatter_fixed+9, 0);
+}
+
+// format => fctob => fcpi => BPL
+// bpi ============/       /
+// tape_speed ============/
+// sampling_speed =======/
+
+// --------------------------------------------------------------------------
+void TDConf::updateFctob()
+{
+	fctob_ratio = format == F_PE ? 2 : 1;
+	updateFcpi();
+}
+
+// --------------------------------------------------------------------------
+void TDConf::updateFcpi()
+{
+	fcpi = fctob_ratio * bpi;
+	updateBPL();
+}
+
+// --------------------------------------------------------------------------
+void TDConf::updateBPL()
+{
+	bpl = qRound((1000000.0f * (double) sampling_speed) / ((double) fcpi * (double) tape_speed));
+}
+
+// --------------------------------------------------------------------------
+void TDConf::updateBPI()
+{
+	fcpi = qRound((1000000.0f * (double) sampling_speed) / ((double) bpl * (double) tape_speed));
+	bpi = fcpi / fctob_ratio;
+}
+
+// --------------------------------------------------------------------------
+void TDConf::setFormat(TapeFormat f)
+{
+	format = f;
+	updateFctob();
+}
+
+// --------------------------------------------------------------------------
+void TDConf::setBPI(int b)
+{
+	bpi = b;
+	updateFcpi();
+}
+
+// --------------------------------------------------------------------------
+void TDConf::setSamplingSpeed(int s)
+{
+	sampling_speed = s;
+	updateBPL();
+}
+
+// --------------------------------------------------------------------------
+void TDConf::setTapeSpeed(int s)
+{
+	tape_speed = s;
+	updateBPL();
+}
+
+// --------------------------------------------------------------------------
+void TDConf::setBPL(int b)
+{
+	bpl = b;
+	updateBPI();
+}
