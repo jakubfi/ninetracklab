@@ -12,8 +12,9 @@ enum burst_search_results {
 };
 
 // --------------------------------------------------------------------------
-DecoderPE::DecoderPE()
+DecoderPE::DecoderPE(TapeDrive *td)
 {
+	this->td = td;
 }
 
 // --------------------------------------------------------------------------
@@ -23,6 +24,9 @@ int DecoderPE::search_mark(int pulse, int pulse_start)
 
 	static int mark_count;
 	static int last_pulse_start;
+
+	int bpl_min = td->cfg.bpl * (1-td->cfg.pe_bpl_margin);
+	int bpl_max = td->cfg.bpl * (1+td->cfg.pe_bpl_margin);
 
 	const int bits_recorded = 0b011000100;
 	//const int bits_empty = 0b000011010;
@@ -44,7 +48,7 @@ int DecoderPE::search_mark(int pulse, int pulse_start)
 		last_result = B_CONT;
 	// it's not the mark
 	} else {
-		if (mark_count > mark_pulses_min * 2) {
+		if (mark_count > td->cfg.pe_mark_pulses_min * 2) {
 			last_result = B_DONE;
 		} else {
 			last_result = B_FAIL;
@@ -65,6 +69,11 @@ int DecoderPE::search_preamble(int pulse, int pulse_start)
 		zero_count = 0;
 	}
 
+	int bpl_min = td->cfg.bpl * (1-td->cfg.pe_bpl_margin);
+	int bpl_max = td->cfg.bpl * (1+td->cfg.pe_bpl_margin);
+	int bpl2_min = 2 * td->cfg.bpl * (1-td->cfg.pe_bpl_margin);
+	int bpl2_max = 2 * td->cfg.bpl * (1+td->cfg.pe_bpl_margin);
+
 	int time_delta = pulse_start - last_pulse_start;
 	last_pulse_start = pulse_start;
 
@@ -81,7 +90,7 @@ int DecoderPE::search_preamble(int pulse, int pulse_start)
 			zero_count++;
 			last_result = B_CONT;
 		// ...a long one = 1 => end of preamble if we have > 25 "0" pulses already
-		} else if ((zero_count > sync_pulses_min * 2) && (time_delta >= bpl2_min) && (time_delta <= bpl2_max)) {
+		} else if ((zero_count > td->cfg.pe_sync_pulses_min * 2) && (time_delta >= bpl2_min) && (time_delta <= bpl2_max)) {
 			last_result = B_DONE;
 		} else {
 			last_result = B_FAIL;
@@ -94,7 +103,7 @@ int DecoderPE::search_preamble(int pulse, int pulse_start)
 }
 
 // --------------------------------------------------------------------------
-int DecoderPE::find_burst(TapeDrive &td, int *burst_start)
+int DecoderPE::find_burst(int *burst_start)
 {
 	int preamble_start = 0;
 	int mark_start = 0;
@@ -103,7 +112,7 @@ int DecoderPE::find_burst(TapeDrive &td, int *burst_start)
 
 	while (1) {
 		int pulse_start;
-		int pulse = td.read(&pulse_start, deskew, edge_sens);
+		int pulse = td->read(&pulse_start, td->cfg.deskew, td->cfg.edge_sens);
 		if (pulse < VT_OK) {
 			return pulse;
 		}
@@ -134,14 +143,19 @@ int DecoderPE::find_burst(TapeDrive &td, int *burst_start)
 }
 
 // --------------------------------------------------------------------------
-int DecoderPE::get_row(TapeDrive &td, quint16 *data)
+int DecoderPE::get_row(quint16 *data)
 {
 	int pulse_start;
-	int last_pulse_start = td.get_pos();
+	int last_pulse_start = td->get_pos();
 	int row_ready = -2;
 
+	int bpl_min = td->cfg.bpl * (1-td->cfg.pe_bpl_margin);
+	int bpl_max = td->cfg.bpl * (1+td->cfg.pe_bpl_margin);
+	int bpl2_min = 2 * td->cfg.bpl * (1-td->cfg.pe_bpl_margin);
+	int bpl2_max = 2 * td->cfg.bpl * (1+td->cfg.pe_bpl_margin);
+
 	while (row_ready < 0) {
-		int pulse = td.read(&pulse_start, deskew, edge_sens);
+		int pulse = td->read(&pulse_start, td->cfg.deskew, td->cfg.edge_sens);
 		if (pulse < 0) {
 			return pulse;
 		}
@@ -166,14 +180,14 @@ int DecoderPE::get_row(TapeDrive &td, quint16 *data)
 }
 
 // --------------------------------------------------------------------------
-int DecoderPE::get_data(TapeDrive &td, BlockStore &bs)
+int DecoderPE::get_data(BlockStore &bs)
 {
 	int postamble_rows = 0;
 	int row_count = 0;
 	quint16 data = 0x01ff; // we start with all ones, as last row of preamble is all ones
 
 	while (1) {
-		int res = get_row(td, &data);
+		int res = get_row(&data);
 		if (res < 0) {
 			return res;
 		}
@@ -190,7 +204,7 @@ int DecoderPE::get_data(TapeDrive &td, BlockStore &bs)
 		} else {
 			postamble_rows = 0;
 		}
-		if (postamble_rows >= sync_pulses_min+1) {
+		if (postamble_rows >= td->cfg.pe_sync_pulses_min+1) {
 			// cut postamble
 			row_count -= postamble_rows;
 			break;
@@ -201,19 +215,19 @@ int DecoderPE::get_data(TapeDrive &td, BlockStore &bs)
 }
 
 // --------------------------------------------------------------------------
-int DecoderPE::get_block(TapeDrive &td, BlockStore &bs)
+int DecoderPE::get_block(BlockStore &bs)
 {
 	int burst_start = 0;
 	int res;
 
-	res = find_burst(td, &burst_start);
+	res = find_burst(&burst_start);
 	if (res == VT_EOT) {
 		//vtape_add_eot(t, t->pos);
 		return VT_EOT;
 	} else if (res == VT_EPULSE) {
 		return VT_EPULSE;
 	} else if (res == C_BLOCK) {
-		res = get_data(td, bs);
+		res = get_data(bs);
 		if (res >= 0) {
 			//vtape_add_block(t, F_PE, burst_start, t->pos - burst_start, buf, res, 0, 0);
 		}
@@ -225,9 +239,9 @@ int DecoderPE::get_block(TapeDrive &td, BlockStore &bs)
 }
 
 // --------------------------------------------------------------------------
-int DecoderPE::run(TapeDrive &td, BlockStore &bs)
+int DecoderPE::run(BlockStore &bs)
 {
-	while (get_block(td, bs) == VT_OK) {
+	while (get_block(bs) == VT_OK) {
 	}
 
 	return VT_OK;

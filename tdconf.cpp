@@ -26,6 +26,10 @@ TDConf::TDConf()
 
 	qFill(unscatter, unscatter+9, 0);
 	qFill(unscatter_fixed, unscatter_fixed+9, 0);
+
+	pe_mark_pulses_min = 40;
+	pe_sync_pulses_min = 25;
+	pe_bpl_margin = 0.4;
 }
 
 // format => fctob => fcpi => BPL
@@ -61,7 +65,7 @@ void TDConf::updateBPI()
 }
 
 // --------------------------------------------------------------------------
-void TDConf::setFormat(TapeFormat f)
+void TDConf::setFormat(Encoding f)
 {
 	format = f;
 	updateFctob();

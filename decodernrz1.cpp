@@ -6,8 +6,9 @@
 #include "decodernrz1.h"
 
 // --------------------------------------------------------------------------
-DecoderNRZ1::DecoderNRZ1()
+DecoderNRZ1::DecoderNRZ1(TapeDrive *td)
 {
+	this->td = td;
 }
 
 // --------------------------------------------------------------------------
@@ -36,96 +37,108 @@ quint16 DecoderNRZ1::crc(quint16 *data, int size)
 }
 
 // --------------------------------------------------------------------------
-int DecoderNRZ1::get_block(TapeDrive &td, BlockStore &bs)
+TapeChunk DecoderNRZ1::scan_next_chunk(int start)
 {
 	int pulse_start;
-	int last_pulse_start = td.get_pos();
+	int chunk_start = -1;
+	int chunk_end;
+
+	td->seek(start, TD_SEEK_SET);
+
+	forever {
+		int pulse = td->read(&pulse_start, td->cfg.deskew, td->cfg.edge_sens);
+		int distance = pulse_start - start;
+		if ((distance > td->cfg.bpl*8) || (start == 0) || (pulse < 0)) {
+			if (chunk_start < 0) {
+				if (pulse < 0) {
+					return TapeChunk(-1, -1);
+				}
+				chunk_start = pulse_start - 4*25;
+			} else {
+				chunk_end = start + 4*25;
+				TapeChunk chunk = TapeChunk(chunk_start, chunk_end);
+				return chunk;
+			}
+		}
+		start = pulse_start;
+	}
+	return TapeChunk(-1, -1);
+}
+
+// --------------------------------------------------------------------------
+int DecoderNRZ1::process(TapeChunk &chunk)
+{
+	int pulse_start = chunk.beg;
+	int last_pulse_start = 0;
 	int rowcount = 0;
 	int b_crc = -1;
 	int d_hparity = 0;
-	unsigned block_start = td.get_pos();
 
-	QList<TapeEvent> e;
+	const quint16 tape_mark = 0b000010011;
 
-	while (1) {
-		int pulse = td.read(&pulse_start, deskew, edge_sens);
-		if (pulse < 0) {
-			return pulse;
-		}
+	td->seek(chunk.beg, TD_SEEK_SET);
+	chunk.events.clear();
+	chunk.type = C_NONE;
+	chunk.format = F_NONE;
+	chunk.vparity_errors = 0;
 
-		const quint16 tape_mark = 0b000010011;
+	while (pulse_start < chunk.end) {
+		int pulse = td->read(&pulse_start, td->cfg.deskew, td->cfg.edge_sens);
+		if (pulse < 0) break;
 
 		int time_delta = pulse_start - last_pulse_start;
 
 		// hparity and crc pulse
-		if ((rowcount > 1) && (time_delta >= bpl4_min) && (time_delta <= bpl4_max)) {
+		if ((rowcount > 1) && (time_delta >= td->cfg.bpl*2.5) && (time_delta <= td->cfg.bpl*6)) {
 			// hparity
 			if (b_crc != -1) {
-				e.append(TapeEvent(pulse_start, C_HPARITY, ""));
-				TapeChunk c(F_NRZ1, td.get_pos()-block_start, buf, rowcount, e);
-				c.b_hparity = pulse;
-				c.d_hparity = d_hparity;
-				c.b_crc = b_crc;
-				c.d_crc = crc(buf, rowcount);
-				bs.addChunk(block_start, c);
+				chunk.events.append(TapeEvent(pulse_start, C_ROW));
+				chunk.b_hparity = pulse;
+				chunk.d_hparity = d_hparity;
+				chunk.b_crc = b_crc;
+				chunk.d_crc = crc(buf, rowcount);
+				chunk.type = C_BLOCK;
+				chunk.format = F_NRZ1;
+				chunk.bytes = rowcount;
+				chunk.data = new quint8[rowcount];
+				qCopy(buf, buf+rowcount, chunk.data);
 				return VT_OK;
 			// crc
 			} else {
 				b_crc = pulse;
 				d_hparity ^= pulse;
-				e.append(TapeEvent(pulse_start, C_CRC, ""));
+				chunk.events.append(TapeEvent(pulse_start, C_ROW));
 			}
 		// tape mark
-		} else if ((pulse == tape_mark) && (time_delta >= bpl8_min) && (time_delta <= bpl8_max) && (rowcount == 1) && (buf[rowcount-1] == tape_mark)) {
-			qDebug() << "tape mark";
-			e.append(TapeEvent(pulse_start, C_ROW, ""));
-			TapeChunk c(F_NRZ1, td.get_pos()-block_start, e);
-			bs.addChunk(block_start, c);
+		} else if ((pulse == tape_mark) && (time_delta >= td->cfg.bpl*6.1) && (time_delta <= td->cfg.bpl*10) && (rowcount == 1) && (buf[rowcount-1] == tape_mark)) {
+			chunk.type = C_MARK;
+			chunk.format = F_NRZ1;
+			chunk.events.append(TapeEvent(pulse_start, C_ROW));
 			return VT_OK;
 		// data
 		} else {
-			// start of a new block
-			if (rowcount == 0) {
-				block_start = pulse_start;
 			// discard too long pulses
-			} else if ((rowcount == 1) && (time_delta >= bpl4_min)) {
+			if ((rowcount == 1) && (time_delta >= td->cfg.bpl*2.5)) {
 				rowcount = 0;
 				d_hparity = 0;
-				e.clear();
-				block_start = pulse_start;
+				chunk.events.clear();
 			}
 			d_hparity ^= pulse;
-			int vp = !(td.parity9(pulse) ^ (pulse>>8));
+			int vp = !(td->parity9(pulse) ^ (pulse>>8));
 			if (vp) {
-				e.append(TapeEvent(pulse_start, C_EVPAR, ""));
+				chunk.events.append(TapeEvent(pulse_start, C_ERROR));
+				chunk.vparity_errors++;
 			} else {
-				e.append(TapeEvent(pulse_start, C_ROW, QString((char)pulse&0xff)));
+				chunk.events.append(TapeEvent(pulse_start, C_ROW));
 			}
 			buf[rowcount] = pulse;
 			rowcount++;
 		}
 
 		last_pulse_start = pulse_start;
-
 	}
 
-	return VT_OK;
+	return VT_EOT;
 }
 
-// --------------------------------------------------------------------------
-int DecoderNRZ1::run(TapeDrive &td, BlockStore &bs)
-{
-	QTime myTimer;
-	myTimer.start();
-
-	td.rewind();
-	qDebug() << "deskew:" << deskew << "edge_sens:" << edge_sens << "bpl4:" << bpl4_min << "-" << bpl4_max << "bpl8:" << bpl8_min << "-" << bpl8_max;
-	while (get_block(td, bs) == VT_OK) {
-
-	}
-	int ms = myTimer.elapsed();
-	qDebug() << "nrz loop done in" << ms << "ms";
-
-	return VT_OK;
-}
 

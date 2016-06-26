@@ -911,10 +911,28 @@
       <item>
        <widget class="QListWidget" name="chunks">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>180</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>180</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Sans Serif</family>
+          <pointsize>8</pointsize>
+         </font>
         </property>
        </widget>
       </item>
@@ -937,6 +955,7 @@
     </property>
     <addaction name="separator"/>
     <addaction name="actionImport"/>
+    <addaction name="action_Save_View_As"/>
     <addaction name="actionExport_blocks"/>
     <addaction name="actionExport_files"/>
     <addaction name="actionExport_tape_image"/>
@@ -952,7 +971,8 @@
     <addaction name="actionSignal_histogram"/>
     <addaction name="actionStart_analysis"/>
     <addaction name="actionEdit_signals"/>
-    <addaction name="actionUnscatter"/>
+    <addaction name="actionSlice_tape"/>
+    <addaction name="actionProcess_current_chunk"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -982,17 +1002,19 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionImport"/>
+   <addaction name="action_Save_View_As"/>
    <addaction name="separator"/>
    <addaction name="actionZoom_1_1"/>
    <addaction name="actionZoom_all"/>
    <addaction name="actionZoom_in"/>
    <addaction name="actionZoom_out"/>
    <addaction name="separator"/>
-   <addaction name="actionUnscatter"/>
    <addaction name="separator"/>
    <addaction name="actionSignal_histogram"/>
    <addaction name="actionPreprecessing"/>
+   <addaction name="actionSlice_tape"/>
    <addaction name="actionStart_analysis"/>
+   <addaction name="actionProcess_current_chunk"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionImport">
@@ -1001,7 +1023,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>&amp;Open tape image</string>
+    <string>&amp;Open tape dump</string>
    </property>
    <property name="toolTip">
     <string>Open tape image</string>
@@ -1091,7 +1113,7 @@
      <normaloff>:/icons/reel.png</normaloff>:/icons/reel.png</iconset>
    </property>
    <property name="text">
-    <string>De&amp;code</string>
+    <string>Process</string>
    </property>
    <property name="toolTip">
     <string>Process tape</string>
@@ -1141,9 +1163,29 @@
     <string>&amp;Edit signals</string>
    </property>
   </action>
-  <action name="actionUnscatter">
+  <action name="actionSlice_tape">
+   <property name="icon">
+    <iconset theme="edit-cut"/>
+   </property>
    <property name="text">
-    <string>&amp;Unscatter</string>
+    <string>&amp;Slice tape</string>
+   </property>
+  </action>
+  <action name="action_Save_View_As">
+   <property name="icon">
+    <iconset theme="document-save"/>
+   </property>
+   <property name="text">
+    <string>&amp;Save selection as...</string>
+   </property>
+  </action>
+  <action name="actionProcess_current_chunk">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/block.png</normaloff>:/icons/block.png</iconset>
+   </property>
+   <property name="text">
+    <string>Process current chunk</string>
    </property>
   </action>
  </widget>
@@ -1214,8 +1256,8 @@
    <slot>show_mouse(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>420</x>
-     <y>552</y>
+     <x>486</x>
+     <y>524</y>
     </hint>
     <hint type="destinationlabel">
      <x>184</x>
@@ -1231,11 +1273,11 @@
    <hints>
     <hint type="sourcelabel">
      <x>193</x>
-     <y>552</y>
+     <y>524</y>
     </hint>
     <hint type="destinationlabel">
-     <x>70</x>
-     <y>493</y>
+     <x>80</x>
+     <y>476</y>
     </hint>
    </hints>
   </connection>
@@ -1247,11 +1289,11 @@
    <hints>
     <hint type="sourcelabel">
      <x>123</x>
-     <y>552</y>
+     <y>524</y>
     </hint>
     <hint type="destinationlabel">
-     <x>419</x>
-     <y>479</y>
+     <x>429</x>
+     <y>476</y>
     </hint>
    </hints>
   </connection>
@@ -1327,7 +1369,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>345</x>
-     <y>552</y>
+     <y>524</y>
     </hint>
     <hint type="destinationlabel">
      <x>408</x>
@@ -1375,7 +1417,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>271</x>
-     <y>552</y>
+     <y>524</y>
     </hint>
     <hint type="destinationlabel">
      <x>322</x>
@@ -1390,140 +1432,12 @@
    <slot>scroll(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>111</x>
-     <y>524</y>
+     <x>121</x>
+     <y>496</y>
     </hint>
     <hint type="destinationlabel">
-     <x>108</x>
-     <y>486</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>bpl_min</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>ninetracklab</receiver>
-   <slot>setPE()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>56</x>
-     <y>106</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>540</x>
-     <y>302</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>mark_max</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>ninetracklab</receiver>
-   <slot>setNRZ1()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>97</x>
-     <y>115</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>540</x>
-     <y>302</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>bpl_max</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>ninetracklab</receiver>
-   <slot>setPE()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>97</x>
-     <y>106</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>540</x>
-     <y>302</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>mark_min</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>ninetracklab</receiver>
-   <slot>setNRZ1()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>56</x>
-     <y>115</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>540</x>
-     <y>302</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cksum_min</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>ninetracklab</receiver>
-   <slot>setNRZ1()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>56</x>
-     <y>106</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>604</x>
-     <y>550</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cksum_max</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>ninetracklab</receiver>
-   <slot>setNRZ1()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>97</x>
-     <y>106</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>540</x>
-     <y>302</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>sync_pulses_min</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>ninetracklab</receiver>
-   <slot>setPE()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>56</x>
-     <y>115</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>540</x>
-     <y>302</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>mark_pulses_min</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>ninetracklab</receiver>
-   <slot>setPE()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>97</x>
-     <y>115</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>540</x>
-     <y>302</y>
+     <x>118</x>
+     <y>476</y>
     </hint>
    </hints>
   </connection>
@@ -1534,8 +1448,8 @@
    <slot>show_bytes(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>366</x>
-     <y>525</y>
+     <x>411</x>
+     <y>524</y>
     </hint>
     <hint type="destinationlabel">
      <x>432</x>
@@ -1543,12 +1457,152 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>unscatter0</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ninetracklab</receiver>
+   <slot>on_unscatter_changed(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>67</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>unscatter1</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ninetracklab</receiver>
+   <slot>on_unscatter_changed(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>141</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>unscatter2</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ninetracklab</receiver>
+   <slot>on_unscatter_changed(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>216</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>unscatter4</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ninetracklab</receiver>
+   <slot>on_unscatter_changed(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>366</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>unscatter5</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ninetracklab</receiver>
+   <slot>on_unscatter_changed(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>440</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>unscatter3</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ninetracklab</receiver>
+   <slot>on_unscatter_changed(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>291</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>unscatter6</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ninetracklab</receiver>
+   <slot>on_unscatter_changed(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>515</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>unscatter7</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ninetracklab</receiver>
+   <slot>on_unscatter_changed(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>590</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>unscatter8</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ninetracklab</receiver>
+   <slot>on_unscatter_changed(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>664</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>564</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
-  <slot>setEdgeSens()</slot>
-  <slot>setNRZ1()</slot>
-  <slot>setPE()</slot>
-  <slot>setDeskew()</slot>
-  <slot>setScatter()</slot>
+  <slot>on_unscatter_changed(int)</slot>
  </slots>
 </ui>

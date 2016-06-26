@@ -3,13 +3,13 @@
 
 #include <QtAlgorithms>
 
-enum TapeFormat { F_NONE, F_PE, F_NRZ1 };
+enum Encoding { F_NONE, F_PE, F_NRZ1 };
 enum EdgeSens { EDGE_NONE, EDGE_RISING, EDGE_FALLING, EDGE_ANY };
 
 // --------------------------------------------------------------------------
 class TDConf {
 public:
-	TapeFormat format;
+	Encoding format;
 	int bpi;				// bits/in
 	int fcpi;				// flux changes/in
 	int fctob_ratio;		// fcpi to bpi ratio
@@ -28,6 +28,12 @@ public:
 	int unscatter[9];
 	int unscatter_fixed[9];
 
+	int pe_mark_pulses_min;
+	int pe_sync_pulses_min;
+	float pe_bpl_margin;
+
+public:
+
 	TDConf();
 
 	void updateFctob();
@@ -35,7 +41,7 @@ public:
 	void updateBPL();
 	void updateBPI();
 
-	void setFormat(TapeFormat f);
+	void setFormat(Encoding f);
 	void setBPI(int b);
 	void setBPL(int b);
 	void setSamplingSpeed(int s);

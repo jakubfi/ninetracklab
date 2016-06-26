@@ -8,7 +8,7 @@
 //static int defchmap[9] = { 7, 6, 5, 4, 3, 2, 1, 0, 8 };
 
 // --------------------------------------------------------------------------
-TapeDrive::TapeDrive(QWidget *parent)
+TapeDrive::TapeDrive(QWidget *parent) : nrz1(this), pe(this)
 {
 	this->parent = parent;
 	data = NULL;
@@ -50,7 +50,7 @@ void TapeDrive::remap()
 	for (int pos=30 ; pos<tape_samples-30 ; pos++) {
 		for (int ch=0 ; ch<9 ; ch++) {
 			quint16 src_d = tape[pos];
-			quint16 source_bit = (src_d >> cfg->chmap[ch]) & 1;
+			quint16 source_bit = (src_d >> cfg.chmap[ch]) & 1;
 			data[pos] |= source_bit << ch;
 		}
 	}
@@ -66,7 +66,7 @@ void TapeDrive::realign()
 	myTimer.start();
 
 	int counter[9];
-	qFill(counter, counter+9, cfg->realign_margin);
+	qFill(counter, counter+9, cfg.realign_margin);
 	int start_pos[9] = {0,0,0,0,0,0,0,0,0};
 	int tail[9] = {0,0,0,0,0,0,0,0,0};
 
@@ -84,15 +84,15 @@ void TapeDrive::realign()
 			} else if ((row >> ch) & 1) {
 				// second edge
 				if (counter[ch] > 0) {
-					for (int p=start_pos[ch] ; p<start_pos[ch]+cfg->realign_push ; p++) {
+					for (int p=start_pos[ch] ; p<start_pos[ch]+cfg.realign_push ; p++) {
 						data[p] ^= 1 << ch;
 					}
 					data[pos] ^= 1 << ch;
-					tail[ch] = cfg->realign_push-1;
+					tail[ch] = cfg.realign_push-1;
 					counter[ch] = 0;
 				// new edge
 				} else {
-					counter[ch] = cfg->realign_margin;
+					counter[ch] = cfg.realign_margin;
 					start_pos[ch] = pos;
 				}
 			// no edge
@@ -114,8 +114,8 @@ void TapeDrive::deglitch()
 	myTimer.start();
 
 	int start_pos[9] = {0,0,0,0,0,0,0,0,0};
-	int maxlen = cfg->glitch_max;
-	if ((maxlen < 1) && (cfg->glitch_single)) maxlen = 1;
+	int maxlen = cfg.glitch_max;
+	if ((maxlen < 1) && (cfg.glitch_single)) maxlen = 1;
 	int counter[9];
 	qFill(counter, counter+9, maxlen);
 
@@ -131,8 +131,8 @@ void TapeDrive::deglitch()
 				if (counter[ch] > 0) {
 					// remove glitches
 					if (
-							((cfg->glitch_single) && (pos-start_pos[ch] <= 1)) ||
-							((pos-start_pos[ch] <= cfg->glitch_max) && (((data[pos-1]>>ch)&1) == ((data[pos+cfg->glitch_distance]>>ch)&1)))
+							((cfg.glitch_single) && (pos-start_pos[ch] <= 1)) ||
+							((pos-start_pos[ch] <= cfg.glitch_max) && (((data[pos-1]>>ch)&1) == ((data[pos+cfg.glitch_distance]>>ch)&1)))
 					) {
 						for (int p=start_pos[ch] ; p<pos ; p++) {
 							data[p] ^= 1 << ch;
@@ -141,6 +141,52 @@ void TapeDrive::deglitch()
 					counter[ch] = 0;
 				// new edge
 				} else {
+					counter[ch] = maxlen;
+					start_pos[ch] = pos;
+				}
+			// no edge
+			} else {
+				// decrease counter if in pulse
+				if (counter[ch] > 0) counter[ch]--;
+			}
+		}
+	}
+
+	int ms = myTimer.elapsed();
+	qDebug() << "deglitch took" << ms << "ms";
+}
+
+// --------------------------------------------------------------------------
+void TapeDrive::deglitch_new()
+{
+	QTime myTimer;
+	myTimer.start();
+
+	int start_pos[9] = {0,0,0,0,0,0,0,0,0};
+	int maxlen = cfg.glitch_max;
+	if ((maxlen < 1) && (cfg.glitch_single)) maxlen = 1;
+	int counter[9];
+	qFill(counter, counter+9, maxlen);
+
+	for (int pos=100 ; pos<tape_samples-100 ; pos++) {
+		for (int ch=0 ; ch<9 ; ch++) {
+			int val = data[pos];
+			int valp = data[pos-1];
+			int row = val ^ valp;
+
+			// found edge
+			if ((row >> ch) & 1) {
+				// second edge
+				if ((((row&val)>>ch)&1) && (counter[ch] > 0)) {
+					// remove glitches
+					if (pos-start_pos[ch] <= cfg.glitch_max) {
+						for (int p=start_pos[ch] ; p<pos ; p++) {
+							data[p] ^= 1 << ch;
+						}
+					}
+					counter[ch] = 0;
+				// new edge
+				} else if (((row&valp)>>ch)&1) {
 					counter[ch] = maxlen;
 					start_pos[ch] = pos;
 				}
@@ -169,35 +215,32 @@ int TapeDrive::preprocess()
 	data = new quint16[tape_samples]();
 
 	remap();
-	deglitch();
+	deglitch_new();
 	realign();
 
-	qDebug() << "initial:" << getMissalign();
 	return VT_OK;
 }
 
 // --------------------------------------------------------------------------
-void TapeDrive::wiggle_wiggle_wiggle()
+void TapeDrive::wiggle_wiggle_wiggle(TapeChunk &chunk)
 {
 	QTime myTimer;
 	myTimer.start();
 
-	int scatter_initial = getMissalign();
+	int scatter_initial = getMissalign(chunk);
 
 	for (int ch=0 ; ch<9 ; ch++) {
 		int iterations = 0;
 		for (int dir=-1 ; dir <=1 ; dir+=2) {
 			if (iterations <= 1) {
 				forever {
-					cfg->unscatter[ch] -= dir;
+					cfg.unscatter[ch] -= dir;
 					iterations++;
-					int cscatter = getMissalign();
+					int cscatter = getMissalign(chunk);
 					if (cscatter < scatter_initial) {
-						qDebug() << ch << dir << " => (ok)" << cscatter;
 						scatter_initial = cscatter;
 					} else {
-						qDebug() << ch << dir << " => (failure)" << cscatter;
-						cfg->unscatter[ch] += dir;
+						cfg.unscatter[ch] += dir;
 						break;
 					}
 				}
@@ -210,9 +253,9 @@ void TapeDrive::wiggle_wiggle_wiggle()
 }
 
 // --------------------------------------------------------------------------
-int TapeDrive::getMissalign(int edges_sample)
+int TapeDrive::getMissalign(TapeChunk &chunk, int edges_sample)
 {
-	int pulse_start;
+	int pulse_start = -1;
 	int last_pulse_start = 0;
 	int bpulses = 0;
 
@@ -220,9 +263,9 @@ int TapeDrive::getMissalign(int edges_sample)
 	int center = bpl * 0.4;
 	int margin = 6;
 
-	rewind();
+	seek(chunk.beg, TD_SEEK_SET);
 
-	while (edges_sample > 0) {
+	while ((edges_sample > 0) && (pulse_start < chunk.end)) {
 		int pulse = read(&pulse_start, 0, EDGE_RISING);
 		if (pulse < 0) break;
 		int delta = pulse_start-last_pulse_start;
@@ -237,19 +280,15 @@ int TapeDrive::getMissalign(int edges_sample)
 }
 
 // --------------------------------------------------------------------------
-void TapeDrive::unscatter()
+void TapeDrive::unscatter(TapeChunk &chunk)
 {
-	qDebug() << "unscatter";
-	QTime myTimer;
-	myTimer.start();
-
 	int pulse_start = 0;
 	int reference_start = 0;
 	quint16 scatter_fixed;
 
-	seek(0, TD_SEEK_END);
+	seek(chunk.end, TD_SEEK_SET);
 	scatter_fixed = 0;
-	qFill(cfg->unscatter, cfg->unscatter+9, 0);
+	qFill(cfg.unscatter, cfg.unscatter+9, 0);
 
 	int bpl = 25;
 	int margin = bpl * 0.15;
@@ -260,7 +299,6 @@ void TapeDrive::unscatter()
 	}
 	for (int ch=0 ; ch<9 ; ch++) {
 		if ((pulse>>ch)&1) {
-			qDebug() << "track" << ch << "is initialy fixed";
 			scatter_fixed |= 1 << ch;
 		}
 	}
@@ -285,20 +323,13 @@ void TapeDrive::unscatter()
 			if (delta <= 25-margin) {
 				for (int ch=0 ; ch<9 ; ch++) {
 					if ((pulse>>ch)&1) {
-						cfg->unscatter[ch] = delta;
+						cfg.unscatter[ch] = delta;
 						scatter_fixed |= 1 << ch;
-						qDebug() << "fixed" << ch << "by" << delta;
 					}
 				}
 			}
 		}
 	}
-	qDebug() << "done after" << tape_samples-pos << "samples";
-	qDebug() << "after unscatter:" << getMissalign();
-	int ms = myTimer.elapsed();
-	qDebug() << "unscatter took" << ms << "ms";
-	wiggle_wiggle_wiggle();
-	qDebug() << "after wiggle:" << getMissalign();
 }
 
 // --------------------------------------------------------------------------
@@ -332,11 +363,20 @@ int TapeDrive::unload()
 }
 
 // --------------------------------------------------------------------------
+void TapeDrive::exportCut(QString filename, long left, long right)
+{
+	QFile out(filename);
+	out.open(QIODevice::WriteOnly);
+	out.write((const char*)tape+left, 2*(right-left));
+	out.close();
+}
+
+// --------------------------------------------------------------------------
 int TapeDrive::peek(int p)
 {
 	int pulse = 0;
 	for (int ch=0 ; ch<9 ; ch++) {
-		int uspos = p - cfg->unscatter[ch];
+		int uspos = p - cfg.unscatter[ch];
 		if (uspos < 0) {
 			uspos = 0;
 		} else if (uspos > tape_samples) {
@@ -381,7 +421,7 @@ int TapeDrive::get_edge(int p, int edge, int dir)
 	int pulse = 0;
 
 	for (int ch=0 ; ch<9 ; ch++) {
-		int uspos = p - cfg->unscatter[ch];
+		int uspos = p - cfg.unscatter[ch];
 		int tpulse = get_edge_internal(uspos, edge, dir);
 		if (tpulse < 0) {
 			return tpulse;
@@ -437,5 +477,71 @@ int TapeDrive::seek(unsigned long offset, int whence)
 	default:
 		return VT_EOT;
 	}
+	return VT_OK;
+}
+
+// --------------------------------------------------------------------------
+TapeChunk TapeDrive::scan_next_chunk(int start)
+{
+	return nrz1.scan_next_chunk(start);
+}
+
+// --------------------------------------------------------------------------
+int TapeDrive::process(TapeChunk &chunk)
+{
+	return nrz1.process(chunk);
+}
+
+// --------------------------------------------------------------------------
+int TapeDrive::process_auto(TapeChunk &chunk)
+{
+	QTime myTimer;
+	myTimer.start();
+
+	int tries = 0;
+	int best_deskew;
+	int least_errors;
+
+	// try as is
+	nrz1.process(chunk);
+	tries++;
+
+	if ((chunk.vparity_errors == 0) && (chunk.b_crc == chunk.d_crc) && (chunk.b_hparity == chunk.d_hparity)) goto fin;
+
+	best_deskew = cfg.deskew;
+	least_errors = chunk.vparity_errors;
+
+	// wiggle deskew
+	for (int deskew=cfg.bpl*0.2 ; deskew<=cfg.bpl*0.8 ; deskew++) {
+		cfg.deskew = deskew;
+		nrz1.process(chunk);
+		tries++;
+		if ((chunk.vparity_errors == 0) && (chunk.b_crc == chunk.d_crc) && (chunk.b_hparity == chunk.d_hparity)) goto fin;
+		if (chunk.vparity_errors < least_errors) {
+			least_errors = chunk.vparity_errors;
+			best_deskew = cfg.deskew;
+		}
+	}
+
+	cfg.deskew = best_deskew;
+
+	// unscatter again
+	unscatter(chunk);
+	nrz1.process(chunk);
+	tries++;
+
+	if ((chunk.vparity_errors == 0) && (chunk.b_crc == chunk.d_crc) && (chunk.b_hparity == chunk.d_hparity)) goto fin;
+
+	// wiggle unscatter
+	wiggle_wiggle_wiggle(chunk);
+	nrz1.process(chunk);
+	tries++;
+
+fin:
+	chunk.cfg = cfg;
+
+	int ms = myTimer.elapsed();
+	qDebug() << "processing done in" << tries << "tries, took" << ms << "ms";
+
 	return VT_OK;
 }

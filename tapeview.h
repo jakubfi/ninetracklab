@@ -15,8 +15,7 @@ class TapeView : public QWidget
 private:
 	Q_OBJECT
 	TapeDrive *td;
-	BlockStore *bs;
-	TDConf *cfg;
+	QMap<unsigned, TapeChunk> *bs;
 
 	int offset;
 	double scale;
@@ -60,8 +59,6 @@ private:
 	inline long toSampleLen(int d) { return d*scale; }
 	inline int toPos(long s) { return (s-offset) / scale; }
 	inline int toLen(long s) { return s / scale; }
-	inline long leftSample() { return offset; }
-	inline long rightSample() { return toSample(geometry().width()); }
 	inline long viewSamples() { return toSampleLen(geometry().width()); }
 
 	void wave_drag(QMouseEvent *event);
@@ -88,10 +85,11 @@ protected:
 public:
 	explicit TapeView(QWidget *parent = 0);
 	void useTapeDrive(TapeDrive *tapedrive) { td = tapedrive; }
-	void useBlockStore(BlockStore *blockstore) { bs = blockstore; }
-	void useConfig(TDConf *c) { cfg = c; }
+	void useBlockStore(QMap<unsigned, TapeChunk> *blockstore) { bs = blockstore; }
 	void zoomRegion(int left, int right);
 	void zoomAround(int pos, double scale);
+	long leftSample() { return offset; }
+	long rightSample() { return toSample(geometry().width()); }
 
 public slots:
 	void show_signals(int v) { disp_signals = v; update(); }

@@ -6,6 +6,8 @@
 #include <QWidget>
 
 #include "tdconf.h"
+#include "decodernrz1.h"
+#include "decoderpe.h"
 
 enum td_error_codes {
 	VT_OK = 0,
@@ -21,6 +23,10 @@ enum tape_seek_whence { TD_SEEK_SET, TD_SEEK_CUR, TD_SEEK_END };
 // --------------------------------------------------------------------------
 class TapeDrive : QObject
 {
+	friend class TapeView;
+	friend class DecoderNRZ1;
+	friend class DecoderPE;
+
 private:
 	QWidget *parent;
 
@@ -30,37 +36,48 @@ private:
 	quint16 *data;
 	int pos;
 
-	TDConf *cfg;
+	TDConf cfg;
+	DecoderNRZ1 nrz1;
+	DecoderPE pe;
+
+private:
+	void remap();
+	void realign();
+	void deglitch();
+	void deglitch_new();
+	int getMissalign(TapeChunk &chunk, int edges_sample = 10000000);
+	int get_edge_internal(int p, int edge, int dir);
+	int get_edge(int p, int edge, int dir);
 
 public:
 	TapeDrive(QWidget *parent);
 	~TapeDrive() { unload(); }
 
-	void useConfig(TDConf *c) { cfg = c; }
+	void configure(TDConf &c) { cfg = c; }
+	TDConf * getConfig() { return &cfg; }
 
 	int parity9(quint8 x);
 	int load(QString image);
 	int unload();
+	void exportCut(QString filename, long left, long right);
 
 	int preprocess();
-	void remap();
-	void realign();
-	void deglitch();
-
-	void unscatter();
-	int getMissalign(int edges_sample = 100000);
-	void wiggle_wiggle_wiggle();
+	void unscatter(TapeChunk &chunk);
+	void wiggle_wiggle_wiggle(TapeChunk &chunk);
 
 	int tape_len() { return tape_samples; }
+	int tape_loaded() { return (data ? 1 : 0); }
 	quint16 * tape_data() { return data; }
+
 	int peek(int p);
-	int get_edge_internal(int p, int edge, int dir);
-	int get_edge(int p, int edge, int dir);
 	int read(int *pulse_start, int deskew_max, int edge, int dir = DIR_FORWARD);
 	void rewind() { seek(0, TD_SEEK_SET); }
 	int seek(unsigned long offset, int whence);
 	int get_pos() { return pos; }
-	int tape_loaded() { return (data ? 1 : 0); }
+
+	TapeChunk scan_next_chunk(int start);
+	int process(TapeChunk &chunk);
+	int process_auto(TapeChunk &chunk);
 
 };
 

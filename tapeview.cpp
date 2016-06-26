@@ -30,8 +30,8 @@ TapeView::TapeView(QWidget *parent) : QWidget(parent)
 
 	setMouseTracking(true);
 
-	pen_wave = QPen(QColor(200, 200 ,200), 1);
-	pen_edge = QPen(QColor(160, 255, 160, 50), 1);
+	pen_wave = QPen(QColor(255, 255 ,255), 1);
+	pen_edge = QPen(QColor(255, 255, 255, 60), 1);
 	pen_tick = QPen(QColor(230, 230 ,230), 1);
 	brush_bg = QBrush(QColor(50, 50, 50));
 	pen_bg = QPen(QColor(50, 50, 50), 1);
@@ -44,7 +44,7 @@ TapeView::TapeView(QWidget *parent) : QWidget(parent)
 
 	pen_block = QPen(QColor(255, 255, 255, 0), 1);
 	brush_block = QBrush(QColor(255, 255, 255, 50));
-	pen_event = QPen(QColor(255, 255, 255, 100), 1);
+	pen_event = QPen(QColor(255, 255, 255, 120), 1);
 	pen_measure = QPen(QColor(255, 255, 235, 255), 1);
 	brush_measure = QBrush(QColor(255, 255, 235, 255));
 	brush_mark = QBrush(QColor(100, 100, 225, 50));
@@ -312,6 +312,8 @@ void TapeView::drawTracks(QPainter &painter, int ch_height)
 	int view_height = geometry().height();
 	int view_width = geometry().width();
 
+	EdgeSens es = td->cfg.edge_sens;
+
 	//QTime myTimer;
 	//myTimer.start();
 
@@ -332,11 +334,11 @@ void TapeView::drawTracks(QPainter &painter, int ch_height)
 			e1 = td->peek(d);
 			int delta = e0 ^ e1;
 			changed_edges |= delta;
-			if (cfg->edge_sens == EDGE_ANY) {
+			if (es == EDGE_ANY) {
 				sensed_edges |= delta;
-			} else if (cfg->edge_sens == EDGE_RISING) {
+			} else if (es == EDGE_RISING) {
 				sensed_edges |= delta & e1;
-			} else if (cfg->edge_sens == EDGE_FALLING) {
+			} else if (es == EDGE_FALLING) {
 				sensed_edges |= delta & e0;
 			}
 			if (changed_edges == 0b111111111) {
@@ -417,11 +419,11 @@ void TapeView::drawRegions(QPainter &painter)
 {
 	// find first and last chunk to show within current view
 	QMap<unsigned, TapeChunk>::const_iterator i, b, e;
-	b = bs->store.lowerBound(leftSample());
-	if (!bs->store.isEmpty() && (b != bs->store.begin())) {
+	b = bs->lowerBound(leftSample());
+	if (!bs->isEmpty() && (b != bs->begin())) {
 		b--;
 	}
-	e = bs->store.lowerBound(rightSample());
+	e = bs->lowerBound(rightSample());
 
 	font.setPixelSize(9);
 	font.setBold(true);
@@ -429,8 +431,49 @@ void TapeView::drawRegions(QPainter &painter)
 
 	// display regions
 	for (i=b ; i!=e ; i++) {
+		if (disp_events) {
+			// display events
+			long last_row = -1;
+			long last_evpar = -1;
+			QList<TapeEvent> events = i.value().events;
+			quint8 *data = i.value().data;
+			for (int j=0 ; j<events.size() ; j++) {
+				unsigned offset = events.at(j).offset;
+				int xpos = toPos(offset);
+				int type = events.at(j).type;
+				if (type == C_ERROR) {
+					if (xpos == last_evpar) continue;
+					last_evpar = xpos;
+				} else if (xpos == last_row) {
+					continue;
+				}
+				last_row = xpos;
+				if ((offset > leftSample()) && (offset < rightSample())) {
+					if (type == C_ROW) {
+						painter.setPen(pen_event);
+					} else {
+						painter.setPen(QPen(QColor(255,40,40, 180), 1));
+					}
+					painter.drawLine(toPos(offset), ruler_height, toPos(offset), geometry().height()-1);
+				}
+				if ((scale <= 2) && (disp_bytes)) {
+					unsigned char b = data[j];
+					QString str;
+					if ((b >= 32) && (b <= 126)) {
+						painter.setPen(QPen(QColor(255,255,150)));
+						str = QString(b);
+					} else {
+						painter.setPen(QPen(QColor(211,211,255)));
+						str = QString::number(b, 16);
+					}
+
+					painter.drawText(toPos(offset)+1, geometry().height()-10, 30, 10, Qt::AlignLeft, str);
+				}
+			}
+		}
+
 		if (disp_regions) {
-			int start_sample = i.key();
+			int start_sample = i.value().beg;
 			int len_samples = i.value().len;
 			if (start_sample < leftSample()) {
 				len_samples -= leftSample()-start_sample;
@@ -445,40 +488,6 @@ void TapeView::drawRegions(QPainter &painter)
 			painter.drawRect(toPos(start_sample), ruler_height, toLen(len_samples), geometry().height()-1);
 		}
 
-		if (disp_events) {
-			// display events
-			long last_row = -1;
-			long last_evpar = -1;
-			QList<TapeEvent> events = i.value().events;
-			for (int i=0 ; i<events.size() ; i++) {
-				unsigned offset = events.at(i).offset;
-				int xpos = toPos(offset);
-				int type = events.at(i).type;
-				if (type == C_EVPAR) {
-					if (xpos == last_evpar) continue;
-					last_evpar = xpos;
-				} else if (xpos == last_row) {
-					continue;
-				}
-				last_row = xpos;
-				if ((offset > leftSample()) && (offset < rightSample())) {
-					if (type == C_ROW) {
-						painter.setPen(pen_event);
-					} else if (type == C_HPARITY) {
-						painter.setPen(QPen(QColor(60,80,200), 1));
-					} else if (type == C_CRC) {
-						painter.setPen(QPen(QColor(255,80,200), 1));
-					} else if (type == C_EVPAR) {
-						painter.setPen(QPen(QColor(255,40,40, 180), 1));
-					}
-					painter.drawLine(toPos(offset), ruler_height, toPos(offset), geometry().height()-1);
-				}
-				if ((scale <= 2) && (disp_bytes)) {
-					painter.setPen(QPen(QColor(255,255,255)));
-					painter.drawText(toPos(offset)+1, geometry().height()-10, 10, 10, Qt::AlignLeft, events.at(i).note);
-				}
-			}
-		}
 	}
 }
 
