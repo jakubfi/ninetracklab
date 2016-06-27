@@ -11,11 +11,11 @@ TDConf::TDConf()
 	bpi = 800;
 	sampling_speed = 1.0f;
 	tape_speed = 50;
-
 	updateFctob();
 
 	qCopy(defchmap, defchmap+9, chmap);
 	deskew = bpl * 0.6;
+	deskew_auto = true;
 	edge_sens = EDGE_RISING;
 
 	glitch_single = true;
@@ -24,6 +24,7 @@ TDConf::TDConf()
 	realign_margin = 0;
 	realign_push = 0;
 
+	unscatter_auto = true;
 	qFill(unscatter, unscatter+9, 0);
 	qFill(unscatter_fixed, unscatter_fixed+9, 0);
 

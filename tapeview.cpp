@@ -415,7 +415,7 @@ void TapeView::drawZoomRect(QPainter &painter)
 	painter.drawRect(mouse_zoom_start.x(), ruler_height, mouse_zoom_end.x()-mouse_zoom_start.x(), geometry().height()-ruler_height-1);
 }
 // --------------------------------------------------------------------------
-void TapeView::drawRegions(QPainter &painter)
+void TapeView::drawRegions(QPainter &painter, int ch_height)
 {
 	// find first and last chunk to show within current view
 	QMap<unsigned, TapeChunk>::const_iterator i, b, e;
@@ -472,9 +472,12 @@ void TapeView::drawRegions(QPainter &painter)
 			}
 		}
 
+		int start_sample = i.value().beg;
+		int end_sample = i.value().end;
+		int len_samples = i.value().len;
+
+		// display region
 		if (disp_regions) {
-			int start_sample = i.value().beg;
-			int len_samples = i.value().len;
 			if (start_sample < leftSample()) {
 				len_samples -= leftSample()-start_sample;
 				start_sample = leftSample();
@@ -488,7 +491,18 @@ void TapeView::drawRegions(QPainter &painter)
 			painter.drawRect(toPos(start_sample), ruler_height, toLen(len_samples), geometry().height()-1);
 		}
 
+		// display hpar errors
+		painter.setPen(QPen(QColor(255,40,40, 180), 1));
+		int hpar_err = i.value().hpar_err;
+		for (int ch=0 ; ch<9 ; ch++) {
+			int ch_mid = ruler_height + (ch+1) * ch_height - (ch_height / 2);
+			int ebit = (hpar_err >> ch) & 1;
+			if (ebit) {
+				painter.drawLine(toPos(start_sample), ch_mid, toPos(end_sample), ch_mid);
+			}
+		}
 	}
+
 }
 
 // --------------------------------------------------------------------------
@@ -553,7 +567,7 @@ void TapeView::paintEvent(QPaintEvent *event)
 		drawZoomRect(painter);
 	}
 	if (disp_regions || disp_events) {
-		drawRegions(painter);
+		drawRegions(painter, ch_height);
 	}
 
 	drawTrackNames(painter, ch_height);

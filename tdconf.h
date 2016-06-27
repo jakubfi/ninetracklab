@@ -18,6 +18,7 @@ public:
 	int tape_speed;			// in/s
 	int chmap[9];			// channel to track mapping: channel = chmap[track]
 	int deskew;				// samples
+	bool deskew_auto;
 	EdgeSens edge_sens;		// edge sensitivity
 
 	bool glitch_single;

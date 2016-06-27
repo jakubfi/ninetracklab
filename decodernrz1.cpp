@@ -70,17 +70,21 @@ int DecoderNRZ1::process(TapeChunk &chunk)
 {
 	int pulse_start = chunk.beg;
 	int last_pulse_start = 0;
-	int rowcount = 0;
-	int b_crc = -1;
-	int d_hparity = 0;
+	int got_crc = 0;
 
 	const quint16 tape_mark = 0b000010011;
 
 	td->seek(chunk.beg, TD_SEEK_SET);
+
 	chunk.events.clear();
 	chunk.type = C_NONE;
 	chunk.format = F_NONE;
-	chunk.vparity_errors = 0;
+	chunk.vpar_err_count = 0;
+	chunk.bytes = 0;
+	chunk.hpar_data = 0;
+	chunk.hpar_tape = 0;
+	chunk.crc_data = 0;
+	chunk.crc_tape = 0;
 
 	while (pulse_start < chunk.end) {
 		int pulse = td->read(&pulse_start, td->cfg.deskew, td->cfg.edge_sens);
@@ -89,50 +93,51 @@ int DecoderNRZ1::process(TapeChunk &chunk)
 		int time_delta = pulse_start - last_pulse_start;
 
 		// hparity and crc pulse
-		if ((rowcount > 1) && (time_delta >= td->cfg.bpl*2.5) && (time_delta <= td->cfg.bpl*6)) {
+		if ((chunk.bytes > 1) && (time_delta >= td->cfg.bpl*2.5) && (time_delta <= td->cfg.bpl*6)) {
 			// hparity
-			if (b_crc != -1) {
+			if (got_crc) {
 				chunk.events.append(TapeEvent(pulse_start, C_ROW));
-				chunk.b_hparity = pulse;
-				chunk.d_hparity = d_hparity;
-				chunk.b_crc = b_crc;
-				chunk.d_crc = crc(buf, rowcount);
+				chunk.hpar_tape = pulse;
+				chunk.hpar_err = chunk.hpar_data ^ chunk.hpar_tape;
+				chunk.crc_data = crc(buf, chunk.bytes);
 				chunk.type = C_BLOCK;
 				chunk.format = F_NRZ1;
-				chunk.bytes = rowcount;
-				chunk.data = new quint8[rowcount];
-				qCopy(buf, buf+rowcount, chunk.data);
+				chunk.data = new quint8[chunk.bytes];
+				qCopy(buf, buf+chunk.bytes, chunk.data);
 				return VT_OK;
 			// crc
 			} else {
-				b_crc = pulse;
-				d_hparity ^= pulse;
+				chunk.crc_tape = pulse;
+				chunk.hpar_data ^= pulse;
 				chunk.events.append(TapeEvent(pulse_start, C_ROW));
+				got_crc = 1;
 			}
 		// tape mark
-		} else if ((pulse == tape_mark) && (time_delta >= td->cfg.bpl*6.1) && (time_delta <= td->cfg.bpl*10) && (rowcount == 1) && (buf[rowcount-1] == tape_mark)) {
+		} else if ((pulse == tape_mark) && (time_delta >= td->cfg.bpl*6.1) && (time_delta <= td->cfg.bpl*10) && (chunk.bytes == 1) && (buf[chunk.bytes-1] == tape_mark)) {
 			chunk.type = C_MARK;
 			chunk.format = F_NRZ1;
+			chunk.hpar_data = 0;
+			chunk.bytes = 0;
 			chunk.events.append(TapeEvent(pulse_start, C_ROW));
 			return VT_OK;
 		// data
 		} else {
 			// discard too long pulses
-			if ((rowcount == 1) && (time_delta >= td->cfg.bpl*2.5)) {
-				rowcount = 0;
-				d_hparity = 0;
+			if ((chunk.bytes == 1) && (time_delta >= td->cfg.bpl*2.5)) {
+				chunk.bytes = 0;
+				chunk.hpar_data = 0;
 				chunk.events.clear();
 			}
-			d_hparity ^= pulse;
+			chunk.hpar_data ^= pulse;
 			int vp = !(td->parity9(pulse) ^ (pulse>>8));
 			if (vp) {
 				chunk.events.append(TapeEvent(pulse_start, C_ERROR));
-				chunk.vparity_errors++;
+				chunk.vpar_err_count++;
 			} else {
 				chunk.events.append(TapeEvent(pulse_start, C_ROW));
 			}
-			buf[rowcount] = pulse;
-			rowcount++;
+			buf[chunk.bytes] = pulse;
+			chunk.bytes++;
 		}
 
 		last_pulse_start = pulse_start;

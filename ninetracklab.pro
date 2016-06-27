@@ -45,7 +45,9 @@ FORMS    += \
     histogramdialog.ui \
     ninetracklab.ui
 
-DISTFILES +=
+DISTFILES += \
+    TODO \
+    README.md
 
 RESOURCES += \
     resources.qrc

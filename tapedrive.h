@@ -43,27 +43,28 @@ private:
 private:
 	void remap();
 	void realign();
-	void deglitch();
+	//void remap_realign();
+	void deglitch_old();
 	void deglitch_new();
 	int getMissalign(TapeChunk &chunk, int edges_sample = 10000000);
 	int get_edge_internal(int p, int edge, int dir);
 	int get_edge(int p, int edge, int dir);
+	void unscatter(TapeChunk &chunk);
+	void wiggle_wiggle_wiggle(TapeChunk &chunk);
 
 public:
 	TapeDrive(QWidget *parent);
 	~TapeDrive() { unload(); }
 
-	void configure(TDConf &c) { cfg = c; }
-	TDConf * getConfig() { return &cfg; }
+	//void configure(TDConf &c) { cfg = c; }
+	//TDConf * getConfig() { return &cfg; }
 
 	int parity9(quint8 x);
 	int load(QString image);
 	int unload();
 	void exportCut(QString filename, long left, long right);
 
-	int preprocess();
-	void unscatter(TapeChunk &chunk);
-	void wiggle_wiggle_wiggle(TapeChunk &chunk);
+	int preprocess(TDConf &c);
 
 	int tape_len() { return tape_samples; }
 	int tape_loaded() { return (data ? 1 : 0); }
@@ -77,7 +78,6 @@ public:
 
 	TapeChunk scan_next_chunk(int start);
 	int process(TapeChunk &chunk);
-	int process_auto(TapeChunk &chunk);
 
 };
 

@@ -9,16 +9,16 @@ TapeChunk::TapeChunk(long b, long e)
 	beg = b;
 	end = e;
 	len = e-b+1;
-	b_crc = 0;
-	d_crc = 0;
-	b_hparity = 0;
-	d_hparity = 0;
+	crc_tape = 0;
+	crc_data = 0;
+	hpar_tape = 0;
+	hpar_data = 0;
 	type = C_NONE;
 	format = F_NONE;
 	bytes = 0;
 	data = NULL;
 	vparity = NULL;
-	vparity_errors = 0;
+	vpar_err_count = 0;
 }
 
 // --------------------------------------------------------------------------
@@ -29,21 +29,15 @@ TapeChunk::~TapeChunk()
 }
 
 // --------------------------------------------------------------------------
-TapeChunk::TapeChunk()
-{
-	TapeChunk(0, 0);
-}
-
-// --------------------------------------------------------------------------
 TapeChunk::TapeChunk(const TapeChunk &other)
 {
 	beg = other.beg;
 	end = other.end;
 	len = other.len;
-	b_crc = other.b_crc;
-	b_hparity = other.b_hparity;
-	d_crc = other.d_crc;
-	d_hparity = other.d_hparity;
+	crc_tape = other.crc_tape;
+	hpar_tape = other.hpar_tape;
+	crc_data = other.crc_data;
+	hpar_data = other.hpar_data;
 	type = other.type;
 	format = other.format;
 	bytes = other.bytes;
@@ -67,10 +61,10 @@ TapeChunk & TapeChunk::operator=(const TapeChunk &other)
 	beg = other.beg;
 	end = other.end;
 	len = other.len;
-	b_crc = other.b_crc;
-	b_hparity = other.b_hparity;
-	d_crc = other.d_crc;
-	d_hparity = other.d_hparity;
+	crc_tape = other.crc_tape;
+	hpar_tape = other.hpar_tape;
+	crc_data = other.crc_data;
+	hpar_data = other.hpar_data;
 	type = other.type;
 	format = other.format;
 	bytes = other.bytes;

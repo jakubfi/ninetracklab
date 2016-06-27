@@ -65,40 +65,34 @@ void TapeDrive::realign()
 	QTime myTimer;
 	myTimer.start();
 
-	int counter[9];
-	qFill(counter, counter+9, cfg.realign_margin);
-	int start_pos[9] = {0,0,0,0,0,0,0,0,0};
-	int tail[9] = {0,0,0,0,0,0,0,0,0};
+	int start_pos;
 
-	for (int pos=100 ; pos<tape_samples-100 ; pos++) {
-		for (int ch=0 ; ch<9 ; ch++) {
+	for (int ch=0 ; ch<9 ; ch++) {
+		start_pos = -1;
+		for (int pos=1 ; pos<tape_samples ; pos++) {
 			int val = data[pos];
 			int valp = data[pos-1];
 			int row = val ^ valp;
 
-			// fill the tail
-			if (tail[ch] > 0) {
-				data[pos] ^= 1 << ch;
-				tail[ch]--;
 			// found edge
-			} else if ((row >> ch) & 1) {
+			if ((row >> ch) & 1) {
+				int len = pos - start_pos;
 				// second edge
-				if (counter[ch] > 0) {
-					for (int p=start_pos[ch] ; p<start_pos[ch]+cfg.realign_push ; p++) {
+				if (len <= cfg.realign_margin) {
+					int p;
+					for (p=start_pos ; p<pos ; p++) {
 						data[p] ^= 1 << ch;
 					}
-					data[pos] ^= 1 << ch;
-					tail[ch] = cfg.realign_push-1;
-					counter[ch] = 0;
+					int new_start = start_pos + cfg.realign_push;
+					for (p=new_start ; p<new_start+len ; p++) {
+						data[p] ^= 1 << ch;
+					}
+					start_pos = -1;
+					pos = p;
 				// new edge
 				} else {
-					counter[ch] = cfg.realign_margin;
-					start_pos[ch] = pos;
+					start_pos = pos;
 				}
-			// no edge
-			} else {
-				// decrease counter if in pulse
-				if (counter[ch] > 0) counter[ch]--;
 			}
 		}
 	}
@@ -108,7 +102,7 @@ void TapeDrive::realign()
 }
 
 // --------------------------------------------------------------------------
-void TapeDrive::deglitch()
+void TapeDrive::deglitch_old()
 {
 	QTime myTimer;
 	myTimer.start();
@@ -162,38 +156,29 @@ void TapeDrive::deglitch_new()
 	QTime myTimer;
 	myTimer.start();
 
-	int start_pos[9] = {0,0,0,0,0,0,0,0,0};
-	int maxlen = cfg.glitch_max;
-	if ((maxlen < 1) && (cfg.glitch_single)) maxlen = 1;
-	int counter[9];
-	qFill(counter, counter+9, maxlen);
+	int start_pos;
 
-	for (int pos=100 ; pos<tape_samples-100 ; pos++) {
-		for (int ch=0 ; ch<9 ; ch++) {
+	for (int ch=0 ; ch<9 ; ch++) {
+		start_pos = -1;
+		for (int pos=1 ; pos<tape_samples ; pos++) {
 			int val = data[pos];
 			int valp = data[pos-1];
 			int row = val ^ valp;
+			int edge_up = ((row & val) >> ch) & 1;
+			int edge_dn = ((row & valp) >> ch) & 1;
 
-			// found edge
-			if ((row >> ch) & 1) {
-				// second edge
-				if ((((row&val)>>ch)&1) && (counter[ch] > 0)) {
+			// first edge
+			if (edge_dn) {
+				start_pos = pos;
+			// second edge
+			} else if (edge_up && (start_pos != -1)) {
+				if (pos-start_pos <= cfg.glitch_max) {
 					// remove glitches
-					if (pos-start_pos[ch] <= cfg.glitch_max) {
-						for (int p=start_pos[ch] ; p<pos ; p++) {
-							data[p] ^= 1 << ch;
-						}
+					for (int p=start_pos ; p<pos ; p++) {
+						data[p] ^= 1 << ch;
 					}
-					counter[ch] = 0;
-				// new edge
-				} else if (((row&valp)>>ch)&1) {
-					counter[ch] = maxlen;
-					start_pos[ch] = pos;
 				}
-			// no edge
-			} else {
-				// decrease counter if in pulse
-				if (counter[ch] > 0) counter[ch]--;
+				start_pos = -1;
 			}
 		}
 	}
@@ -203,7 +188,7 @@ void TapeDrive::deglitch_new()
 }
 
 // --------------------------------------------------------------------------
-int TapeDrive::preprocess()
+int TapeDrive::preprocess(TDConf &c)
 {
 	if (!tape) {
 		return VT_ELOAD;
@@ -214,9 +199,11 @@ int TapeDrive::preprocess()
 	}
 	data = new quint16[tape_samples]();
 
+	cfg = c;
+
 	remap();
-	deglitch_new();
 	realign();
+	deglitch_new();
 
 	return VT_OK;
 }
@@ -224,9 +211,6 @@ int TapeDrive::preprocess()
 // --------------------------------------------------------------------------
 void TapeDrive::wiggle_wiggle_wiggle(TapeChunk &chunk)
 {
-	QTime myTimer;
-	myTimer.start();
-
 	int scatter_initial = getMissalign(chunk);
 
 	for (int ch=0 ; ch<9 ; ch++) {
@@ -247,9 +231,6 @@ void TapeDrive::wiggle_wiggle_wiggle(TapeChunk &chunk)
 			}
 		}
 	}
-
-	int ms = myTimer.elapsed();
-	qDebug() << "wiggle wiggle wiggle took" << ms << "ms";
 }
 
 // --------------------------------------------------------------------------
@@ -367,7 +348,7 @@ void TapeDrive::exportCut(QString filename, long left, long right)
 {
 	QFile out(filename);
 	out.open(QIODevice::WriteOnly);
-	out.write((const char*)tape+left, 2*(right-left));
+	out.write((const char*)tape+2*left, 2*(right-left));
 	out.close();
 }
 
@@ -489,59 +470,92 @@ TapeChunk TapeDrive::scan_next_chunk(int start)
 // --------------------------------------------------------------------------
 int TapeDrive::process(TapeChunk &chunk)
 {
-	return nrz1.process(chunk);
-}
-
-// --------------------------------------------------------------------------
-int TapeDrive::process_auto(TapeChunk &chunk)
-{
-	QTime myTimer;
-	myTimer.start();
-
-	int tries = 0;
 	int best_deskew;
 	int least_errors;
 
-	// try as is
-	nrz1.process(chunk);
-	tries++;
+	// load initial chunk config
+	cfg = chunk.cfg;
 
-	if ((chunk.vparity_errors == 0) && (chunk.b_crc == chunk.d_crc) && (chunk.b_hparity == chunk.d_hparity)) goto fin;
+	// try as is
+	qDebug() << "initial try with deskew" << cfg.deskew;
+	nrz1.process(chunk);
+
+	if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
 
 	best_deskew = cfg.deskew;
-	least_errors = chunk.vparity_errors;
+	least_errors = chunk.vpar_err_count;
 
-	// wiggle deskew
-	for (int deskew=cfg.bpl*0.2 ; deskew<=cfg.bpl*0.8 ; deskew++) {
-		cfg.deskew = deskew;
-		nrz1.process(chunk);
-		tries++;
-		if ((chunk.vparity_errors == 0) && (chunk.b_crc == chunk.d_crc) && (chunk.b_hparity == chunk.d_hparity)) goto fin;
-		if (chunk.vparity_errors < least_errors) {
-			least_errors = chunk.vparity_errors;
-			best_deskew = cfg.deskew;
+	if (cfg.deskew_auto) {
+		// wiggle deskew
+		for (int deskew=cfg.bpl*0.2 ; deskew<=cfg.bpl*0.8 ; deskew++) {
+			cfg.deskew = deskew;
+			nrz1.process(chunk);
+			qDebug() << "try with deskew" << cfg.deskew;
+			if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
+			if (chunk.vpar_err_count < least_errors) {
+				least_errors = chunk.vpar_err_count;
+				best_deskew = cfg.deskew;
+			}
 		}
+		cfg.deskew = best_deskew;
 	}
 
-	cfg.deskew = best_deskew;
+	if (cfg.unscatter_auto) {
+		// unscatter again
+		unscatter(chunk);
+		nrz1.process(chunk);
+		qDebug() << "after unscatter try with deskew" << cfg.deskew;
+	}
 
-	// unscatter again
-	unscatter(chunk);
-	nrz1.process(chunk);
-	tries++;
+	if (chunk.type != C_BLOCK) goto fin;
 
-	if ((chunk.vparity_errors == 0) && (chunk.b_crc == chunk.d_crc) && (chunk.b_hparity == chunk.d_hparity)) goto fin;
+	best_deskew = cfg.deskew;
+	least_errors = chunk.vpar_err_count;
 
-	// wiggle unscatter
-	wiggle_wiggle_wiggle(chunk);
-	nrz1.process(chunk);
-	tries++;
+	if (cfg.deskew_auto) {
+		// wiggle deskew
+		for (int deskew=cfg.bpl*0.2 ; deskew<=cfg.bpl*0.8 ; deskew++) {
+			cfg.deskew = deskew;
+			nrz1.process(chunk);
+			qDebug() << "try with deskew" << cfg.deskew;
+			if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
+			if (chunk.vpar_err_count < least_errors) {
+				least_errors = chunk.vpar_err_count;
+				best_deskew = cfg.deskew;
+			}
+		}
+		cfg.deskew = best_deskew;
+	}
+
+	if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
+
+	if (cfg.unscatter_auto) {
+		// wiggle unscatter
+		wiggle_wiggle_wiggle(chunk);
+		nrz1.process(chunk);
+		qDebug() << "after wiggle try with deskew" << cfg.deskew;
+	}
+	best_deskew = cfg.deskew;
+	least_errors = chunk.vpar_err_count;
+
+	if (cfg.deskew_auto) {
+		// wiggle deskew
+		for (int deskew=cfg.bpl*0.2 ; deskew<=cfg.bpl*0.8 ; deskew++) {
+			cfg.deskew = deskew;
+			nrz1.process(chunk);
+			qDebug() << "try with deskew" << cfg.deskew;
+			if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
+			if (chunk.vpar_err_count < least_errors) {
+				least_errors = chunk.vpar_err_count;
+				best_deskew = cfg.deskew;
+			}
+		}
+		cfg.deskew = best_deskew;
+	}
 
 fin:
+	// store configuration that chunk was finally processed with
 	chunk.cfg = cfg;
-
-	int ms = myTimer.elapsed();
-	qDebug() << "processing done in" << tries << "tries, took" << ms << "ms";
 
 	return VT_OK;
 }

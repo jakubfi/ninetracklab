@@ -69,7 +69,7 @@ private:
 	void drawTrackNames(QPainter &painter, int ch_height);
 	void drawMouse(QPainter &painter);
 	void drawZoomRect(QPainter &painter);
-	void drawRegions(QPainter &painter);
+	void drawRegions(QPainter &painter, int ch_height);
 	void drawMeasure(QPainter &painter);
 	void signalEdit(QPoint from, QPoint pos);
 

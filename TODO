@@ -1,62 +1,46 @@
+funkcjonalność:
+
+permutacje deskew
+lepsza heurystyka - niepotrzebnie duże skoki w unscatterze?
+glitch remover - tylko nowy? poprawić UI
+NRZ1: stare tapemarki
+poprawianie wg parzystości
+uruchomić PE
+eksport bloku
+eksport pliku
+
+UI:
+
+dialogi progress
+poprawić przesunięcie w rysowaniu eventów (ujednolicić wykrywanie krawędzi widok/read()?)
 podłączyć pasek przewijania do końca
+lista chunkow: ukryj zrobione
+zmienić jednostki na bpl ratio i liczyć/pokazywać w samplach
+ograniczenie zoom out
+enable/disable akcji gdzie trzeba
+save nie może działać jak nie ma taśmy
+automatyczna szerokość listy chunków
+
+kod:
+
 enumy jako typy używać
-----------------------------------------------------
+usunąć resztki BlockStore z PE
+pozycja powinna być wszędzie long
+peny i brushe powinny być albo wszystkie in-place, albo predefiniowane (?)
+edycja sygnałów jako metoda TapeDrive
+przenieść "chunkowe" operacje do TChunk
 
-import tape ->
-track mapping + preproces ->
-tape type selection ->
-READY
+bugi:
 
+okazjonalny crash przy pokazywaniu bajtów
+okazjonalny crash przy wyborze bloku z listy
 
-----------------------------------------------------
+DONE:
 
-user input:
-
-sampling speed  MS/s
-tape speed      in/s
-tape type       (preset)
-
-or manual:
-
-mfrd            len
-
-tape reader:
-glitch remover  width, space
-pulse pusher    width, offset
-remap channels  track:chan, ...         live
-edge sens       direction               live
-deskew          margin                  live
-unscatter find  -
-unscatter       track:deskew, ...       live
-
-nrz1:
-crc/hpar marg.  min, max
-mark marg.      min, max
-
-pe:
-preamble        min_len
-postamble       min_len
-mark            min_len
-
-
---- OLD ----------------------------------------------------------
-
-general:
- * proper static deskewer (user-provided and/or automatic)
- * units: samples/ns/us/ms
- * range searches
- * append junk
-
-filters:
- * edge sensitivity: r/f/rf ???
- * noise rejection ???
-
-PE:
- * parity check
- * bit-flip fixing
- * tape marks fix
-
-NRZ:
- * vparity check
- * hparity check
- * crc check
++ rysować niezgodność parzystości poziomej
++ zoptymalizować heurystykę - za często się wiggle robi
++ zaznaczać na liście chunków ostatnio wybrany chunk po analizie
++ poprawić "przenoszenie" konfiga bloku przy edycji/procesowaniu
++ wyprostować użycie "auto"
++ "save as" nie działa
++ glitch remover - czasami jakby nie działa

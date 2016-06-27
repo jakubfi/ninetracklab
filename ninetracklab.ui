@@ -500,9 +500,9 @@
             <item>
              <layout class="QVBoxLayout" name="verticalLayout_5">
               <item>
-               <widget class="QLabel" name="label_2">
+               <widget class="QCheckBox" name="deskew_auto">
                 <property name="text">
-                 <string>Deskew width:</string>
+                 <string>Auto deskew</string>
                 </property>
                </widget>
               </item>
@@ -1113,7 +1113,7 @@
      <normaloff>:/icons/reel.png</normaloff>:/icons/reel.png</iconset>
    </property>
    <property name="text">
-    <string>Process</string>
+    <string>&amp;Process</string>
    </property>
    <property name="toolTip">
     <string>Process tape</string>
@@ -1165,7 +1165,8 @@
   </action>
   <action name="actionSlice_tape">
    <property name="icon">
-    <iconset theme="edit-cut"/>
+    <iconset theme="edit-cut">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Slice tape</string>
@@ -1173,7 +1174,8 @@
   </action>
   <action name="action_Save_View_As">
    <property name="icon">
-    <iconset theme="document-save"/>
+    <iconset theme="document-save">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Save selection as...</string>
@@ -1185,7 +1187,7 @@
      <normaloff>:/icons/block.png</normaloff>:/icons/block.png</iconset>
    </property>
    <property name="text">
-    <string>Process current chunk</string>
+    <string>Process &amp;current chunk</string>
    </property>
   </action>
  </widget>

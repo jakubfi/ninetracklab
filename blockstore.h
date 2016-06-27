@@ -30,22 +30,25 @@ public:
 class TapeChunk
 {
 public:
-	long beg;
-	long end;
-	long len;
-	ChunkType type;
-	Encoding format;
-	int bytes;
-	quint8 *data;
-	quint8 *vparity;
-	int b_crc, b_hparity;
-	int d_crc, d_hparity;
-	int vparity_errors;
+	ChunkType type;				// type
+	Encoding format;			// encoding format
+	long beg;					// start (samples into tape)
+	long end;					// end (samples into tape)
+	long len;					// length (samples)
+
+	quint8 *data;				// data
+	quint8 *vparity;			// parity
+	int bytes;					// data length (bytes)
+
+	int crc_tape, crc_data;		// hparity (on tape, calculated)
+	int hpar_err;				// hparity mismatches
+	int hpar_tape, hpar_data;	// crc (on tape, calculated)
+	int vpar_err_count;			// number of vparity errors
+
 	QList<TapeEvent> events;
 	TDConf cfg;
 
-	TapeChunk();
-	TapeChunk(long b, long e);
+	TapeChunk(long b=0, long e=0);
 	~TapeChunk();
 	TapeChunk(const TapeChunk &other);
 	TapeChunk &operator=(const TapeChunk &other);
