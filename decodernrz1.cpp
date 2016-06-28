@@ -73,6 +73,7 @@ int DecoderNRZ1::process(TapeChunk &chunk)
 	int got_crc = 0;
 
 	const quint16 tape_mark = 0b000010011;
+	const quint16 tape_mark_old = 0b111010111;
 
 	td->seek(chunk.beg, TD_SEEK_SET);
 
@@ -112,7 +113,15 @@ int DecoderNRZ1::process(TapeChunk &chunk)
 				chunk.events.append(TapeEvent(pulse_start, C_ROW));
 				got_crc = 1;
 			}
-		// tape mark
+		// old tapemark
+		} else if ((pulse == tape_mark_old) && (time_delta >= td->cfg.bpl*2.5) && (time_delta <= td->cfg.bpl*6) && (chunk.bytes == 1) && (buf[chunk.bytes-1] == tape_mark_old)) {
+			chunk.type = C_MARK;
+			chunk.format = F_NRZ1;
+			chunk.hpar_data = 0;
+			chunk.bytes = 0;
+			chunk.events.append(TapeEvent(pulse_start, C_ROW));
+			return VT_OK;
+		// standard tape mark
 		} else if ((pulse == tape_mark) && (time_delta >= td->cfg.bpl*6.1) && (time_delta <= td->cfg.bpl*10) && (chunk.bytes == 1) && (buf[chunk.bytes-1] == tape_mark)) {
 			chunk.type = C_MARK;
 			chunk.format = F_NRZ1;

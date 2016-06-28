@@ -41,6 +41,7 @@ public:
 	void updateFcpi();
 	void updateBPL();
 	void updateBPI();
+	void updateDeskew();
 
 	void setFormat(Encoding f);
 	void setBPI(int b);

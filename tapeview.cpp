@@ -483,7 +483,7 @@ void TapeView::drawRegions(QPainter &painter, int ch_height)
 				start_sample = leftSample();
 			}
 			painter.setPen(pen_block);
-			if (i.value().type == C_BLOCK) {
+			if ((i.value().type == C_BLOCK) || (i.value().type == C_MARK)) {
 				painter.setBrush(brush_block);
 			} else {
 				painter.setBrush(brush_mark);

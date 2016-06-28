@@ -138,7 +138,7 @@ void NineTrackLab::updateChunkList()
 */
 	}
 	ui->chunks->setCurrentRow(current_idx);
-	QString status = QString("%1 chunks, %2 blocks, %3 marks, %4 errors").arg(chunks).arg(blocks).arg(marks).arg(errors);
+	QString status = QString("%1 chunks, %2 blocks, %3 marks, %4 errors, %5 unknown").arg(chunks).arg(blocks).arg(marks).arg(errors).arg(chunks-blocks-marks);
 	ui->statusBar->showMessage(status);
 }
 
@@ -203,12 +203,12 @@ void NineTrackLab::on_actionSlice_tape_triggered()
 	forever {
 		TapeChunk chunk = td.scan_next_chunk(start);
 		chunk.cfg = cfg;
-		start = chunk.end;
-		if (start >= 0) {
+		if (chunk.end >= 0) {
 			bs.insert(chunk.beg, chunk);
 		} else {
 			break;
 		}
+		start = chunk.end;
 	}
 	updateChunkList();
 	ui->tapeview->update();
@@ -221,10 +221,7 @@ void NineTrackLab::on_actionStart_analysis_triggered()
 	myTimer.start();
 
 	QMap<unsigned, TapeChunk>::iterator i;
-	int cnt = bs.size();
-	int c=0;
 	for (i=bs.begin() ; i!=bs.end() ; i++) {
-		qDebug() << c++ << "of" << cnt;
 		i.value().cfg = cfg;
 		td.process(i.value());
 		cfg = i.value().cfg;
@@ -232,8 +229,7 @@ void NineTrackLab::on_actionStart_analysis_triggered()
 	updateChunkList();
 	ui->tapeview->update();
 
-	int ms = myTimer.elapsed();
-	qDebug() << "tape analysis time: " << ms << "ms";
+	qDebug() << "total processing time:" << myTimer.elapsed();
 }
 
 // -----------------------------------------------------------------------

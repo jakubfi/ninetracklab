@@ -1,9 +1,9 @@
 funkcjonalność:
 
-permutacje deskew
-lepsza heurystyka - niepotrzebnie duże skoki w unscatterze?
+wiggle powinno być węższe?
+unscatter powinien przesuwać w obie strony?
+permutacje unscatter
 glitch remover - tylko nowy? poprawić UI
-NRZ1: stare tapemarki
 poprawianie wg parzystości
 uruchomić PE
 eksport bloku
@@ -44,3 +44,7 @@ DONE:
 + wyprostować użycie "auto"
 + "save as" nie działa
 + glitch remover - czasami jakby nie działa
++ NRZ1: stare tapemarki
++ uporządkować debug process()
++ lepsza heurystyka
++ niepotrzebnie duże skoki w deskew?

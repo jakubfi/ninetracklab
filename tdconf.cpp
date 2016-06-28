@@ -33,7 +33,7 @@ TDConf::TDConf()
 	pe_bpl_margin = 0.4;
 }
 
-// format => fctob => fcpi => BPL
+// format => fctob => fcpi => BPL => deskew
 // bpi ============/       /
 // tape_speed ============/
 // sampling_speed =======/
@@ -56,6 +56,13 @@ void TDConf::updateFcpi()
 void TDConf::updateBPL()
 {
 	bpl = qRound((1000000.0f * (double) sampling_speed) / ((double) fcpi * (double) tape_speed));
+	updateDeskew();
+}
+
+// --------------------------------------------------------------------------
+void TDConf::updateDeskew()
+{
+	deskew = 0.2 * bpl;
 }
 
 // --------------------------------------------------------------------------
@@ -98,4 +105,5 @@ void TDConf::setBPL(int b)
 {
 	bpl = b;
 	updateBPI();
+	updateDeskew();
 }

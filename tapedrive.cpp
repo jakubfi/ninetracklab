@@ -467,95 +467,108 @@ TapeChunk TapeDrive::scan_next_chunk(int start)
 	return nrz1.scan_next_chunk(start);
 }
 
+#define PROCESS_OK ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data))
+#define PROCESS_ERR_SMALL ((chunk.bytes > 256) && ((chunk.vpar_err_count*3) < chunk.bytes))
+
 // --------------------------------------------------------------------------
 int TapeDrive::process(TapeChunk &chunk)
 {
-	int best_deskew;
+	int best_deskew, init_deskew;
 	int least_errors;
-
-	// load initial chunk config
 	cfg = chunk.cfg;
 
-	// try as is
-	qDebug() << "initial try with deskew" << cfg.deskew;
+	QDebug dbg = qDebug();
+	dbg.nospace();
+	dbg << ": ";
+
+	QTime myTimer;
+	myTimer.start();
+
+	/* --- TRY AS IS ------------------------------------------------------ */
+	dbg << "(" << cfg.deskew << ") ";
 	nrz1.process(chunk);
 
-	if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
+	if (PROCESS_OK) goto fin;
+	if (PROCESS_ERR_SMALL) goto small;
 
-	best_deskew = cfg.deskew;
-	least_errors = chunk.vpar_err_count;
+// huge:
 
-	if (cfg.deskew_auto) {
-		// wiggle deskew
-		for (int deskew=cfg.bpl*0.2 ; deskew<=cfg.bpl*0.8 ; deskew++) {
-			cfg.deskew = deskew;
-			nrz1.process(chunk);
-			qDebug() << "try with deskew" << cfg.deskew;
-			if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
-			if (chunk.vpar_err_count < least_errors) {
-				least_errors = chunk.vpar_err_count;
-				best_deskew = cfg.deskew;
-			}
-		}
-		cfg.deskew = best_deskew;
+	/* --- UNSCATTER + WIGGLE --------------------------------------------- */
+	if (cfg.unscatter_auto) {
+		dbg << "unscatter ";
+		unscatter(chunk);
+		wiggle_wiggle_wiggle(chunk);
+		nrz1.process(chunk);
+		if (PROCESS_OK) goto fin;
+		if (PROCESS_ERR_SMALL) goto small;
 	}
 
-	if (cfg.unscatter_auto) {
-		// unscatter again
-		unscatter(chunk);
-		nrz1.process(chunk);
-		qDebug() << "after unscatter try with deskew" << cfg.deskew;
+	/* --- PERMUTATE ------------------------------------------------------ */
+	dbg << "permutate ";
+
+small:
+
+	/* --- WIGGLE DESKEW -------------------------------------------------- */
+	best_deskew = init_deskew = cfg.deskew;
+	least_errors = chunk.vpar_err_count;
+	if (cfg.deskew_auto) {
+		dbg << "deskew ";
+		for (int dir=1 ; dir>=-1 ; dir-=2) {
+			for (int deskew=init_deskew ; (cfg.bpl*0.2) && (deskew<=cfg.bpl*0.8) ; deskew+=dir) {
+				cfg.deskew = deskew;
+				dbg << cfg.deskew << " ";
+				nrz1.process(chunk);
+				if (PROCESS_OK) goto fin;
+				if (chunk.vpar_err_count <= least_errors) {
+					least_errors = chunk.vpar_err_count;
+					best_deskew = cfg.deskew;
+				} else {
+					break;
+				}
+			}
+			init_deskew--;
+		}
+		cfg.deskew = best_deskew;
 	}
 
 	if (chunk.type != C_BLOCK) goto fin;
 
-	best_deskew = cfg.deskew;
-	least_errors = chunk.vpar_err_count;
-
-	if (cfg.deskew_auto) {
-		// wiggle deskew
-		for (int deskew=cfg.bpl*0.2 ; deskew<=cfg.bpl*0.8 ; deskew++) {
-			cfg.deskew = deskew;
-			nrz1.process(chunk);
-			qDebug() << "try with deskew" << cfg.deskew;
-			if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
-			if (chunk.vpar_err_count < least_errors) {
-				least_errors = chunk.vpar_err_count;
-				best_deskew = cfg.deskew;
-			}
-		}
-		cfg.deskew = best_deskew;
-	}
-
-	if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
-
+	/* --- WIGGLE UNSCATTER ----------------------------------------------- */
 	if (cfg.unscatter_auto) {
-		// wiggle unscatter
+		dbg << "wiggle ";
 		wiggle_wiggle_wiggle(chunk);
 		nrz1.process(chunk);
-		qDebug() << "after wiggle try with deskew" << cfg.deskew;
 	}
-	best_deskew = cfg.deskew;
-	least_errors = chunk.vpar_err_count;
 
+	/* --- WIGGLE DESKEW -------------------------------------------------- */
+	best_deskew = init_deskew = cfg.deskew;
+	least_errors = chunk.vpar_err_count;
 	if (cfg.deskew_auto) {
-		// wiggle deskew
-		for (int deskew=cfg.bpl*0.2 ; deskew<=cfg.bpl*0.8 ; deskew++) {
-			cfg.deskew = deskew;
-			nrz1.process(chunk);
-			qDebug() << "try with deskew" << cfg.deskew;
-			if ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data)) goto fin;
-			if (chunk.vpar_err_count < least_errors) {
-				least_errors = chunk.vpar_err_count;
-				best_deskew = cfg.deskew;
+		dbg << "deskew ";
+		for (int dir=1 ; dir>=-1 ; dir-=2) {
+			for (int deskew=init_deskew ; (cfg.bpl*0.2) && (deskew<=cfg.bpl*0.8) ; deskew+=dir) {
+				cfg.deskew = deskew;
+				dbg << cfg.deskew << " ";
+				nrz1.process(chunk);
+				if (PROCESS_OK) goto fin;
+				if (chunk.vpar_err_count <= least_errors) {
+					least_errors = chunk.vpar_err_count;
+					best_deskew = cfg.deskew;
+				} else {
+					break;
+				}
 			}
+			init_deskew--;
 		}
 		cfg.deskew = best_deskew;
 	}
 
 fin:
-	// store configuration that chunk was finally processed with
+
 	chunk.cfg = cfg;
 
+	int ms = myTimer.elapsed();
+
+	dbg << "fin: " << ms << " ms";
 	return VT_OK;
 }
