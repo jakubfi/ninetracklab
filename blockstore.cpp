@@ -83,3 +83,5 @@ TapeChunk & TapeChunk::operator=(const TapeChunk &other)
 	events = other.events;
 	return *this;
 }
+
+// vim: tabstop=4 shiftwidth=4 autoindent

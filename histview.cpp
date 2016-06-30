@@ -133,3 +133,5 @@ void HistView::paintEvent(QPaintEvent *event)
 
 	painter.end();
 }
+
+// vim: tabstop=4 shiftwidth=4 autoindent

@@ -247,3 +247,4 @@ int DecoderPE::run(BlockStore &bs)
 	return VT_OK;
 }
 
+// vim: tabstop=4 shiftwidth=4 autoindent

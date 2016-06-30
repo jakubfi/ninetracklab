@@ -54,4 +54,6 @@ public:
 	TapeChunk &operator=(const TapeChunk &other);
 };
 
-#endif // BLOCKSTORE_H
+#endif
+
+// vim: tabstop=4 shiftwidth=4 autoindent

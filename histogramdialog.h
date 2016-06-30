@@ -25,4 +25,6 @@ public slots:
 	void hupdate();
 };
 
-#endif // HISTOGRAMDIALOG_H
+#endif
+
+// vim: tabstop=4 shiftwidth=4 autoindent

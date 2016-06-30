@@ -589,3 +589,5 @@ void TapeView::scroll(int pos)
 	offset = pos * (td->tape_len() - toSampleLen(geometry().width())) / 1000;
 	update();
 }
+
+// vim: tabstop=4 shiftwidth=4 autoindent

@@ -155,4 +155,4 @@ int DecoderNRZ1::process(TapeChunk &chunk)
 	return VT_EOT;
 }
 
-
+// vim: tabstop=4 shiftwidth=4 autoindent

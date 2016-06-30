@@ -15,14 +15,6 @@ TapeDrive::TapeDrive(QWidget *parent) : nrz1(this), pe(this)
 	tape = NULL;
 	tape_samples = 0;
 	pos = 0;
-
-//	qCopy(defchmap, defchmap+9, chmap);
-//	qFill(scatter, scatter+9, 0);
-//	scatter_fixed = 0;
-
-	//realign_margin = 6;
-	//realign_push = 5;
-	//glitch_max = 1;
 }
 
 // --------------------------------------------------------------------------
@@ -260,56 +252,149 @@ int TapeDrive::getMissalign(TapeChunk &chunk, int edges_sample)
 	return bpulses;
 }
 
+/*
+// --------------------------------------------------------------------------
+int TapeDrive::read_bunch(int *pulses_start, int *first, int *last, int deskew_max, int edge, int dir)
+{
+	int pulse = 0;
+	int got_start = 0;
+	qFill(pulses_start, pulses_start+9, -1);
+
+	do {
+		int tpulse = get_edge(pos, edge, dir);
+		if (tpulse < 0) {
+			return tpulse;
+		}
+
+		if (!got_start) {
+			if (tpulse) {
+				got_start = 1;
+				*first = pos;
+			}
+		} else {
+			deskew_max--;
+		}
+
+		for (int ch=0 ; ch<9 ; ch++) {
+			if (((tpulse>>ch)&1) && (pulses_start[ch] == -1)) {
+				pulses_start[ch] = pos;
+			}
+		}
+
+		pulse |= tpulse;
+		pos += dir;
+	} while (!pulse || (deskew_max > 0));
+
+	*last = pos;
+
+	return pulse;
+}
+
+// --------------------------------------------------------------------------
+void TapeDrive::unscatter_old(TapeChunk &chunk)
+{
+	int pulses_start[9];
+	EdgeSens edge;
+	int unscatter_done = 0;
+	int reference_start = 0;
+	int last, first;
+	int pulse;
+	int fixing_rows = 2;
+
+	// tape is going to be read backwards - reverse edges
+	if (cfg.edge_sens == EDGE_FALLING) {
+		edge = EDGE_RISING;
+	} else if (chunk.cfg.edge_sens == EDGE_RISING) {
+		edge = EDGE_FALLING;
+	} else {
+		edge = EDGE_ANY;
+	}
+
+	// reset current unscatter
+	seek(chunk.end, TD_SEEK_SET);
+	qFill(cfg.unscatter, cfg.unscatter+9, 0);
+	cfg.unscatter_fixed = 0;
+
+	while (unscatter_done != 0b111111111) {
+		reference_start = 0;
+		pulse = read_bunch(pulses_start, &first, &last, cfg.bpl*0.8, edge, DIR_BACKWARD);
+		if (pulse < 0) {
+			return;
+		}
+		if ((cfg.unscatter_fixed & pulse)) {
+			for (int ch=0 ; ch<9 ; ch++) {
+				if ((pulses_start[ch] > -1) && ((cfg.unscatter_fixed>>ch)&1)) {
+					reference_start = pulses_start[ch];
+					pulses_start[ch] = -1;
+					//qDebug() << "found reference" << reference_start << "to fixed track" << ch;
+					break;
+				}
+			}
+		} else {
+			reference_start = first;
+			//qDebug() << "using first edge for reference" << reference_start;
+		}
+		for (int ch=0 ; ch<9 ; ch++) {
+			if ((pulses_start[ch] > -1) && !((unscatter_done>>ch)&1)) {
+				//qDebug() << "unscatter for" << ch << "is now" << reference_start - pulses_start[ch];
+				cfg.unscatter[ch] = reference_start - pulses_start[ch];
+			}
+		}
+		unscatter_done |= pulse;
+		if (fixing_rows > 0) {
+			cfg.unscatter_fixed |= pulse;
+			fixing_rows--;
+		}
+	}
+}
+*/
+
 // --------------------------------------------------------------------------
 void TapeDrive::unscatter(TapeChunk &chunk)
 {
 	int pulse_start = 0;
 	int reference_start = 0;
-	quint16 scatter_fixed;
+	quint16 unscatter_done;
+	int group = 0;
 
 	seek(chunk.end, TD_SEEK_SET);
-	scatter_fixed = 0;
+	unscatter_done = 0;
 	qFill(cfg.unscatter, cfg.unscatter+9, 0);
+	cfg.unscatter_fixed = 0;
 
-	int bpl = 25;
-	int margin = bpl * 0.15;
+	int margin = cfg.bpl * 0.85;
 
-	int pulse = read(&pulse_start, 0, EDGE_FALLING, DIR_BACKWARD);
-	if (pulse < 0) {
-		return;
-	}
-	for (int ch=0 ; ch<9 ; ch++) {
-		if ((pulse>>ch)&1) {
-			scatter_fixed |= 1 << ch;
-		}
-	}
-	reference_start = pulse_start;
-
-	while (scatter_fixed != 0b111111111) {
+	while (unscatter_done != 0b111111111) {
 		int pulse = read(&pulse_start, 0, EDGE_FALLING, DIR_BACKWARD);
 		if (pulse < 0) {
 			break;
 		}
 
 		// new reference
-		if (pulse & scatter_fixed) {
+		if ((!unscatter_done) || (pulse & unscatter_done)) {
 			for (int ch=0 ; ch<9 ; ch++) {
 				if ((pulse>>ch)&1) {
-					scatter_fixed |= 1 << ch;
+					unscatter_done |= 1 << ch;
 				}
 			}
 			reference_start = pulse_start;
+			group++;
+		// pulses within
 		} else {
 			int delta = reference_start - pulse_start;
-			if (delta <= 25-margin) {
+			if (delta <= margin) {
 				for (int ch=0 ; ch<9 ; ch++) {
 					if ((pulse>>ch)&1) {
 						cfg.unscatter[ch] = delta;
-						scatter_fixed |= 1 << ch;
+						unscatter_done |= 1 << ch;
 					}
 				}
 			}
 		}
+		if (group <= 2) {
+			cfg.unscatter_fixed |= unscatter_done;
+		}
+
 	}
 }
 
@@ -504,7 +589,9 @@ int TapeDrive::process(TapeChunk &chunk)
 	}
 
 	/* --- PERMUTATE ------------------------------------------------------ */
-	dbg << "permutate ";
+	dbg << "permutate (";
+	for (int ch=8 ; ch>=0 ; ch--) dbg << ((cfg.unscatter_fixed>>ch)&1);
+	dbg << ") ";
 
 small:
 
@@ -514,7 +601,7 @@ small:
 	if (cfg.deskew_auto) {
 		dbg << "deskew ";
 		for (int dir=1 ; dir>=-1 ; dir-=2) {
-			for (int deskew=init_deskew ; (cfg.bpl*0.2) && (deskew<=cfg.bpl*0.8) ; deskew+=dir) {
+			for (int deskew=init_deskew ; (deskew>=cfg.bpl*0.2) && (deskew<=cfg.bpl*0.8) ; deskew+=dir) {
 				cfg.deskew = deskew;
 				dbg << cfg.deskew << " ";
 				nrz1.process(chunk);
@@ -546,7 +633,7 @@ small:
 	if (cfg.deskew_auto) {
 		dbg << "deskew ";
 		for (int dir=1 ; dir>=-1 ; dir-=2) {
-			for (int deskew=init_deskew ; (cfg.bpl*0.2) && (deskew<=cfg.bpl*0.8) ; deskew+=dir) {
+			for (int deskew=init_deskew ; (deskew>=cfg.bpl*0.2) && (deskew<=cfg.bpl*0.8) ; deskew+=dir) {
 				cfg.deskew = deskew;
 				dbg << cfg.deskew << " ";
 				nrz1.process(chunk);
@@ -572,3 +659,5 @@ fin:
 	dbg << "fin: " << ms << " ms";
 	return VT_OK;
 }
+
+// vim: tabstop=4 shiftwidth=4 autoindent

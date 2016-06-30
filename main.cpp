@@ -10,3 +10,5 @@ int main(int argc, char *argv[])
 
 	return a.exec();
 }
+
+// vim: tabstop=4 shiftwidth=4 autoindent

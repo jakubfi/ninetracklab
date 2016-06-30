@@ -26,7 +26,7 @@ TDConf::TDConf()
 
 	unscatter_auto = true;
 	qFill(unscatter, unscatter+9, 0);
-	qFill(unscatter_fixed, unscatter_fixed+9, 0);
+	unscatter_fixed = 0;
 
 	pe_mark_pulses_min = 40;
 	pe_sync_pulses_min = 25;
@@ -107,3 +107,5 @@ void TDConf::setBPL(int b)
 	updateBPI();
 	updateDeskew();
 }
+
+// vim: tabstop=4 shiftwidth=4 autoindent

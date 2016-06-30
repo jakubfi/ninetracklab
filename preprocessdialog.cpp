@@ -141,3 +141,5 @@ void PreprocessDialog::on_realign_push_valueChanged(int arg)
 {
 	cfg->realign_push = arg;
 }
+
+// vim: tabstop=4 shiftwidth=4 autoindent

@@ -43,7 +43,6 @@ private:
 private:
 	void remap();
 	void realign();
-	//void remap_realign();
 	void deglitch_old();
 	void deglitch_new();
 	int getMissalign(TapeChunk &chunk, int edges_sample = 10000000);
@@ -55,9 +54,6 @@ private:
 public:
 	TapeDrive(QWidget *parent);
 	~TapeDrive() { unload(); }
-
-	//void configure(TDConf &c) { cfg = c; }
-	//TDConf * getConfig() { return &cfg; }
 
 	int parity9(quint8 x);
 	int load(QString image);
@@ -81,4 +77,6 @@ public:
 
 };
 
-#endif // TAPEDRIVE_H
+#endif
+
+// vim: tabstop=4 shiftwidth=4 autoindent

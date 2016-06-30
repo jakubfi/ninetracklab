@@ -27,7 +27,7 @@ public:
 
 	bool unscatter_auto;
 	int unscatter[9];
-	int unscatter_fixed[9];
+	int unscatter_fixed;
 
 	int pe_mark_pulses_min;
 	int pe_sync_pulses_min;
@@ -56,4 +56,6 @@ public:
 	void setUnscatter(const int *us) { qCopy(us, us+9, unscatter); }
 };
 
-#endif // TDCONF_H
+#endif
+
+// vim: tabstop=4 shiftwidth=4 autoindent

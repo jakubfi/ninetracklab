@@ -39,4 +39,6 @@ private slots:
 	void on_realign_push_valueChanged(int arg);
 };
 
-#endif // PREPROCESSDIALOG_H
+#endif
+
+// vim: tabstop=4 shiftwidth=4 autoindent

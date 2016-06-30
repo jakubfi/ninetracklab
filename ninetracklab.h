@@ -1,5 +1,5 @@
-#ifndef V9TTD_H
-#define V9TTD_H
+#ifndef NINETRACKLAB_H
+#define NINETRACKLAB_H
 
 #include <QMainWindow>
 #include <QModelIndex>
@@ -53,4 +53,6 @@ public:
 
 };
 
-#endif // V9TTD_H
+#endif
+
+// vim: tabstop=4 shiftwidth=4 autoindent

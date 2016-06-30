@@ -1,8 +1,8 @@
 funkcjonalność:
 
-wiggle powinno być węższe?
 unscatter powinien przesuwać w obie strony?
 permutacje unscatter
+wiggle powinno być węższe?
 glitch remover - tylko nowy? poprawić UI
 poprawianie wg parzystości
 uruchomić PE
@@ -48,3 +48,4 @@ DONE:
 + uporządkować debug process()
 + lepsza heurystyka
 + niepotrzebnie duże skoki w deskew?
++ unscatter wypełnia unscatter_fixed

@@ -329,3 +329,5 @@ void NineTrackLab::on_deskew_auto_toggled(bool checked)
 	cfg.deskew_auto = checked;
 	ui->deskew->setDisabled(checked);
 }
+
+// vim: tabstop=4 shiftwidth=4 autoindent

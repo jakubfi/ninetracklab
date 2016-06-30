@@ -20,4 +20,6 @@ public:
 
 };
 
-#endif // ABOUTDIALOG_H
+#endif
+
+// vim: tabstop=4 shiftwidth=4 autoindent
