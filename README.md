@@ -1,4 +1,4 @@
-Nine Track Lab lets you decode digital images of PE/NRZ1
+Nine Track Lab lets you decode digital images of NRZ1
 9-track tapes. The idea behind the tool is that you can read tapes which are
 otherwise unreadable by the drive you have access to due to tape damage
 or format incompatibility.
@@ -71,42 +71,17 @@ tape row sample. This is a format used by Saleae software when exporting data to
 
 http://support.saleae.com/hc/en-us/articles/208667306-Binary-data-export-format-description
 
-## Program parameters summary
-
-* **-h** - Print help
-* **-i input** - Input tape image file name
-* **-p len** - Base pulse length (>1)
-* **-c chlist** - Input channel list specified as: p,7,6,5,4,3,2,1,0 (p=parity track, 0=LSB track). Default is: 8,7,6,5,4,3,2,1,0
-* **-d ratio** - Downsample input data by n>1
-* **-m margin** - Max allowed base pulse margin (0.0 - 0.5)
-* **-s skew** - Max allowed inter-track skew (0.0 - 0.5)
-* **-S** - Calculate and print pulse statistics
-
 ## Running Nine Track Lab
 
-v9ttd can run in one of two modes:
+...
 
-* pulse length statistical analysis (selected by specifying **-S** switch at the commandline)
-* tape contents analysis (used otherwise)
+## Using Nine Track Lab
 
-First mode can help with finding out parameters for running v9ttd in the second mode.
-It does not analyze the signal for data, it just lets you see what are the pulse lenghts
-in your sampled signal (for both positive and negative pulses, polarity doesn't matter).
+...
 
-Depending on the mode, different options should/can be used:
+### Channel to track mapping
 
-* pulse analysis: `v9ttd -i input -S [-c chlist] [-d downsample]`
-* content analysis: `v9ttd -i input -p pulse_len [-c chlist] [-m pulse_margin] [-d downsample] [-s skew]`
-
-### Input file name (-i)
-
-This parameter is required for both modes of operation. It specifies the input file that v9ttd works on.
-
-### Channel to track mapping (-c)
-
-This parameter is optional for both modes of operation.
-
-By default v9ttd assumes that logic analyzer probes were connected to the drive so that
+By default Nine Track Lab assumes that logic analyzer probes were connected to the drive so that
 logic channels 0-7 carry signals for data bits 2^0...2^7, and channel 8 carry the parity track:
 
 * channel 0 -> bit 2^0
@@ -119,13 +94,8 @@ logic channels 0-7 carry signals for data bits 2^0...2^7, and channel 8 carry th
 * channel 7 -> bit 2^7
 * channel 8 -> parity
 
-I you follow this setup, there is no need to use **-c** option,
+I you follow this setup, there is no need to change anything,
 otherwise you need to provide proper channel to track mapping.
-
-Numbers in the **-c** map list are logic analyzer channel numbers.
-Position in the list denotes the bit significance as follows:
-
-    parity, 2^7, 2^6, 2^5, 2^4, 2^3, 2^2, 2^1, 2^0
 
 For example, if logic analyzer channels are connected the following way:
 
@@ -139,57 +109,13 @@ For example, if logic analyzer channels are connected the following way:
 * channel 7 -> bit 2^6
 * channel 8 -> bit 2^7
 
-you would need to remap them with:
+...
 
-    v9ttd -i input.bin -c 0,8,7,6,5,4,3,2,1
+### Signal statistics
 
-### Downsampling (-d)
+...
 
-This parameter is optional for both modes of operation.
-
-If your input is sampled with high frequency, for example 10MS/s, you may want to downsample it
-before analysis to lower the memory usage and speed up the proces. To downsample a signal
-by 5 (to 2MS/s), use:
-
-    v9ttd -i input.bin -d 5
-
-### Signal statistics (-S)
-
-This switch selects the pulse analysis mode, which lets you see a histogram of all pulses found
-on the tape image. For example:
-
-
-```
-Pulse length histogram:
-   1 : ####
-   2 : #################################################
-   3 : ##############################################
-   4 : #############################
-   5 : #######################################################
-   6 : ##################################################################################
-   7 : ##################################################################
-   8 : ###############
-   9 : ####
-  10 : ##
-  11 : ###############
-  12 : ###################
-  13 : #######
-  14 : ##
-```
-
-From the above you can guess that the base pulse length (or the BPL, or the minimum flux transition distance) is 6 samples -
-this is the most frequent pulse length. There is also another, last peek at 12 samples (double the BPL),
-which indicates, that this tape is PE-encoded.
-Pulses of length around 1-4 seem to be a digital noise "created" between blocks by tape drive's digital stage drivers.
-
-### Base pulse length and margin (-p and -m)
-
-Now that you know what the BPL is, you can set parameters for the tape content analysis. BPL is set with **-p**
-option, amd **-m** allows you to set the +- margin (as a ratio of BPL). For example, the following command:
-
-    v9ttd -i input.bin -b 62 -m 0.3
-
-sets the base pulse length to 62 with margin of 0.3 BPL, allowing it to be anywhere between 38 and 86 (inclusive).
+### Base pulse length and margin
 
 Following table shows base pulse length values for various tape formats and speeds sampled at 10MS/s:
 
@@ -199,11 +125,6 @@ Following table shows base pulse length values for various tape formats and spee
 |    50 in/s    |     250      |     62     |     31     |
 |   100 in/s    |     125      |     31     |     15     |
 
-### Inter-track skew (-s)
+### Inter-track skew
 
-Due to tape heads magnetic gap misalignment and inaccuracies in tape vs. head aligment
-tracks may become skewed. '-s' option allows you to specify maximum allowed skew
-as a ratio of BPL.
-
-
-
+...
