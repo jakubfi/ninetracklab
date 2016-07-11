@@ -1,13 +1,10 @@
 funkcjonalność:
 
-unscatter powinien przesuwać w obie strony?
-permutacje unscatter
 wiggle powinno być węższe?
-glitch remover - tylko nowy? poprawić UI
-poprawianie wg parzystości
-uruchomić PE
+glitch remover - tylko nowy, poprawić UI
 eksport bloku
 eksport pliku
+uruchomić PE
 
 UI:
 
@@ -30,13 +27,13 @@ pozycja powinna być wszędzie long
 peny i brushe powinny być albo wszystkie in-place, albo predefiniowane (?)
 edycja sygnałów jako metoda TapeDrive
 przenieść "chunkowe" operacje do TChunk
+dane chunka w chunku
+preprocessing per chunk
 
 bugi:
 
-okazjonalny crash przy pokazywaniu bajtów
-okazjonalny crash przy wyborze bloku z listy
 
-DONE:
+--- DONE: -----------------------------------------------------------------------------
 
 + rysować niezgodność parzystości poziomej
 + zoptymalizować heurystykę - za często się wiggle robi
@@ -50,3 +47,8 @@ DONE:
 + lepsza heurystyka
 + niepotrzebnie duże skoki w deskew?
 + unscatter wypełnia unscatter_fixed
++ permutacje unscatter
++ unscatter powinien przesuwać w obie strony? (nie)
++ poprawianie wg parzystości
++ okazjonalny crash przy pokazywaniu bajtów
++ okazjonalny crash przy wyborze bloku z listy
