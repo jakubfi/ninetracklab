@@ -81,11 +81,13 @@ int DecoderNRZ1::process(TapeChunk &chunk)
 	chunk.type = C_NONE;
 	chunk.format = F_NONE;
 	chunk.vpar_err_count = 0;
+	chunk.hpar_err_count = 0;
 	chunk.bytes = 0;
 	chunk.hpar_data = 0;
 	chunk.hpar_tape = 0;
 	chunk.crc_data = 0;
 	chunk.crc_tape = 0;
+	chunk.fixed = 0;
 
 	while (pulse_start < chunk.end) {
 		int pulse = td->read(&pulse_start, td->cfg.deskew, td->cfg.edge_sens);
@@ -103,8 +105,11 @@ int DecoderNRZ1::process(TapeChunk &chunk)
 				chunk.crc_data = crc(buf, chunk.bytes);
 				chunk.type = C_BLOCK;
 				chunk.format = F_NRZ1;
-				chunk.data = new quint8[chunk.bytes];
+				chunk.data = new quint16[chunk.bytes];
 				qCopy(buf, buf+chunk.bytes, chunk.data);
+				for (int i=0 ; i<9 ; i++) {
+					if ((chunk.hpar_err>>i)&1) chunk.hpar_err_count++;
+				}
 				return VT_OK;
 			// crc
 			} else {

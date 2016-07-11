@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>562</width>
-    <height>399</height>
+    <height>430</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1177,7 +1177,7 @@
           <item row="1" column="1">
            <widget class="QSpinBox" name="glitch_max">
             <property name="maximum">
-             <number>10</number>
+             <number>99</number>
             </property>
             <property name="value">
              <number>0</number>

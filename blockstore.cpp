@@ -13,19 +13,19 @@ TapeChunk::TapeChunk(long b, long e)
 	crc_data = 0;
 	hpar_tape = 0;
 	hpar_data = 0;
+	fixed = 0;
 	type = C_NONE;
 	format = F_NONE;
 	bytes = 0;
 	data = NULL;
-	vparity = NULL;
 	vpar_err_count = 0;
+	hpar_err_count = 0;
 }
 
 // --------------------------------------------------------------------------
 TapeChunk::~TapeChunk()
 {
 	delete[] data;
-	delete[] vparity;
 }
 
 // --------------------------------------------------------------------------
@@ -38,21 +38,21 @@ TapeChunk::TapeChunk(const TapeChunk &other)
 	hpar_tape = other.hpar_tape;
 	crc_data = other.crc_data;
 	hpar_data = other.hpar_data;
+	fixed = other.fixed;
 	type = other.type;
 	format = other.format;
 	bytes = other.bytes;
 	if (other.data) {
-		data = new quint8[bytes];
-		vparity = new quint8[bytes];
+		data = new quint16[bytes];
 		for (int i=0 ; i<bytes ; i++) {
 			data[i] = other.data[i];
-			vparity[i] = other.data[i] >> 8;
 		}
 	} else {
 		data = NULL;
-		vparity = NULL;
 	}
 	events = other.events;
+	hpar_err_count = other.hpar_err_count;
+	vpar_err_count = other.vpar_err_count;
 }
 
 // --------------------------------------------------------------------------
@@ -65,22 +65,22 @@ TapeChunk & TapeChunk::operator=(const TapeChunk &other)
 	hpar_tape = other.hpar_tape;
 	crc_data = other.crc_data;
 	hpar_data = other.hpar_data;
+	fixed = other.fixed;
 	type = other.type;
 	format = other.format;
 	bytes = other.bytes;
 	delete[] data;
 	if (other.data) {
-		data = new quint8[bytes];
-		vparity = new quint8[bytes];
+		data = new quint16[bytes];
 		for (int i=0 ; i<bytes ; i++) {
 			data[i] = other.data[i];
-			vparity[i] = other.data[i] >> 8;
 		}
 	} else {
 		data = NULL;
-		vparity = NULL;
 	}
 	events = other.events;
+	hpar_err_count = other.hpar_err_count;
+	vpar_err_count = other.vpar_err_count;
 	return *this;
 }
 

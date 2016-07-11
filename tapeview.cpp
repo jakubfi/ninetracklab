@@ -436,7 +436,7 @@ void TapeView::drawRegions(QPainter &painter, int ch_height)
 			long last_row = -1;
 			long last_evpar = -1;
 			QList<TapeEvent> events = i.value().events;
-			quint8 *data = i.value().data;
+			quint16 *data = i.value().data;
 			for (int j=0 ; j<events.size() ; j++) {
 				unsigned offset = events.at(j).offset;
 				int xpos = toPos(offset);
@@ -457,7 +457,12 @@ void TapeView::drawRegions(QPainter &painter, int ch_height)
 					painter.drawLine(toPos(offset), ruler_height, toPos(offset), geometry().height()-1);
 				}
 				if ((scale <= 2) && (disp_bytes)) {
-					unsigned char b = data[j];
+					unsigned char b;
+					if (j < i.value().bytes) {
+						b = data[j];
+					} else {
+						b = ' ';
+					}
 					QString str;
 					if ((b >= 32) && (b <= 126)) {
 						painter.setPen(QPen(QColor(255,255,150)));

@@ -553,8 +553,20 @@ TapeChunk TapeDrive::scan_next_chunk(int start)
 }
 
 #define PROCESS_OK ((chunk.vpar_err_count == 0) && (chunk.crc_tape == chunk.crc_data) && (chunk.hpar_tape == chunk.hpar_data))
-#define PROCESS_ERR_SMALL ((chunk.bytes > 256) && ((chunk.vpar_err_count*3) < chunk.bytes))
+//#define PROCESS_ERR_SMALL ((chunk.bytes > 256) && ((chunk.vpar_err_count*3) < chunk.bytes))
+#define PROCESS_ERR_SMALL (chunk.vpar_err_count*100/chunk.bytes < 20)
 
+struct sc {
+	int val;
+	int pos;
+};
+
+// --------------------------------------------------------------------------
+bool sc_lessthan(const sc &s1, const sc &s2)
+{
+	return qAbs(s1.val) > qAbs(s2.val);
+}
+#define QT_NO_DEBUG_OUTPUT 1
 // --------------------------------------------------------------------------
 int TapeDrive::process(TapeChunk &chunk)
 {
@@ -562,16 +574,20 @@ int TapeDrive::process(TapeChunk &chunk)
 	int least_errors;
 	cfg = chunk.cfg;
 
-	QDebug dbg = qDebug();
-	dbg.nospace();
-	dbg << ": ";
+	int permutable;
+	QList<sc> lu;
+	int usc[9];
+	int permutations;
+	int cnt = 0;
 
 	QTime myTimer;
 	myTimer.start();
 
 	/* --- TRY AS IS ------------------------------------------------------ */
-	dbg << "(" << cfg.deskew << ") ";
+	qDebug() << "Initial deskew:" << cfg.deskew;
+	qDebug() << "Initial unscatter: " << cfg.unscatter[8] << cfg.unscatter[7] << cfg.unscatter[6] << cfg.unscatter[5] << cfg.unscatter[4] << cfg.unscatter[3] << cfg.unscatter[2] << cfg.unscatter[1] << cfg.unscatter[0];
 	nrz1.process(chunk);
+	qDebug() << "Verrors: " << chunk.vpar_err_count << "(" << chunk.vpar_err_count*100/(chunk.bytes+1) << "%) Herrors:" << chunk.hpar_err << "CRC ok?" << (chunk.crc_tape == chunk.crc_data);
 
 	if (PROCESS_OK) goto fin;
 	if (PROCESS_ERR_SMALL) goto small;
@@ -580,33 +596,62 @@ int TapeDrive::process(TapeChunk &chunk)
 
 	/* --- UNSCATTER + WIGGLE --------------------------------------------- */
 	if (cfg.unscatter_auto) {
-		dbg << "unscatter ";
 		unscatter(chunk);
+		qDebug() << "After unscatter: " << cfg.unscatter[8] << cfg.unscatter[7] << cfg.unscatter[6] << cfg.unscatter[5] << cfg.unscatter[4] << cfg.unscatter[3] << cfg.unscatter[2] << cfg.unscatter[1] << cfg.unscatter[0];
 		wiggle_wiggle_wiggle(chunk);
+		qDebug() << "After wiggle: " << cfg.unscatter[8] << cfg.unscatter[7] << cfg.unscatter[6] << cfg.unscatter[5] << cfg.unscatter[4] << cfg.unscatter[3] << cfg.unscatter[2] << cfg.unscatter[1] << cfg.unscatter[0];
 		nrz1.process(chunk);
+		qDebug() << "Verrors: " << chunk.vpar_err_count << "(" << chunk.vpar_err_count*100/(chunk.bytes+1) << "%) Herrors:" << chunk.hpar_err << "CRC ok?" << (chunk.crc_tape == chunk.crc_data);
 		if (PROCESS_OK) goto fin;
 		if (PROCESS_ERR_SMALL) goto small;
 	}
 
 	/* --- PERMUTATE ------------------------------------------------------ */
-	dbg << "permutate (";
-	for (int ch=8 ; ch>=0 ; ch--) dbg << ((cfg.unscatter_fixed>>ch)&1);
-	dbg << ") ";
+	permutable = ~cfg.unscatter_fixed & 0b111111111;
+
+	qCopy(cfg.unscatter, cfg.unscatter+9, usc);
+	for (int i=0 ; i<9 ; i++) {
+		if (((permutable >> i) & 1) && (usc[i] != 0)) {
+			sc x = {usc[i], i};
+			lu << x;
+		}
+	}
+	qSort(lu.begin(), lu.end(), sc_lessthan);
+	permutations = (1 << lu.count()) - 1;
+	for (int i=1 ; i<=permutations ; i++) {
+		qCopy(usc, usc+9, cfg.unscatter);
+		for (int j=0 ; j<lu.count() ; j++) {
+			if ((i>>j)&1) {
+				if (lu[j].val <= 0) {
+					cfg.unscatter[lu[j].pos] += 25;
+				} else {
+					cfg.unscatter[lu[j].pos] -= 25;
+				}
+			}
+		}
+		qDebug() << "Permutation" << cnt << " : " << cfg.unscatter[8] << cfg.unscatter[7] << cfg.unscatter[6] << cfg.unscatter[5] << cfg.unscatter[4] << cfg.unscatter[3] << cfg.unscatter[2] << cfg.unscatter[1] << cfg.unscatter[0];
+		cnt++;
+		nrz1.process(chunk);
+		qDebug() << "Verrors: " << chunk.vpar_err_count << "(" << chunk.vpar_err_count*100/(chunk.bytes+1) << "%) Herrors:" << chunk.hpar_err << "CRC ok?" << (chunk.crc_tape == chunk.crc_data);
+		if (PROCESS_OK) goto fin;
+		if (PROCESS_ERR_SMALL) goto small;
+	}
 
 small:
 
-	/* --- WIGGLE DESKEW -------------------------------------------------- */
+	/* --- DESKEW -------------------------------------------------- */
 	best_deskew = init_deskew = cfg.deskew;
 	least_errors = chunk.vpar_err_count;
 	if (cfg.deskew_auto) {
-		dbg << "deskew ";
 		for (int dir=1 ; dir>=-1 ; dir-=2) {
 			for (int deskew=init_deskew ; (deskew>=cfg.bpl*0.2) && (deskew<=cfg.bpl*0.8) ; deskew+=dir) {
 				cfg.deskew = deskew;
-				dbg << cfg.deskew << " ";
+				qDebug() << "New deskew:" << cfg.deskew;
 				nrz1.process(chunk);
-				if (PROCESS_OK) goto fin;
-				if (chunk.vpar_err_count <= least_errors) {
+				qDebug() << "Verrors: " << chunk.vpar_err_count << "(" << chunk.vpar_err_count*100/(chunk.bytes+1) << "%) Herrors:" << chunk.hpar_err << "CRC ok?" << (chunk.crc_tape == chunk.crc_data);
+				if (PROCESS_OK) {
+					goto fin;
+				} else if (chunk.vpar_err_count <= least_errors) {
 					least_errors = chunk.vpar_err_count;
 					best_deskew = cfg.deskew;
 				} else {
@@ -615,49 +660,78 @@ small:
 			}
 			init_deskew--;
 		}
+		qDebug() << "Using best deskew:" << best_deskew;
 		cfg.deskew = best_deskew;
 	}
 
 	if (chunk.type != C_BLOCK) goto fin;
 
-	/* --- WIGGLE UNSCATTER ----------------------------------------------- */
+	/* --- WIGGLE ----------------------------------------------- */
 	if (cfg.unscatter_auto) {
-		dbg << "wiggle ";
 		wiggle_wiggle_wiggle(chunk);
+		qDebug() << "After wiggle: " << cfg.unscatter[8] << cfg.unscatter[7] << cfg.unscatter[6] << cfg.unscatter[5] << cfg.unscatter[4] << cfg.unscatter[3] << cfg.unscatter[2] << cfg.unscatter[1] << cfg.unscatter[0];
 		nrz1.process(chunk);
+		qDebug() << "Verrors: " << chunk.vpar_err_count << "(" << chunk.vpar_err_count*100/(chunk.bytes+1) << "%) Herrors:" << chunk.hpar_err << "CRC ok?" << (chunk.crc_tape == chunk.crc_data);
 	}
 
-	/* --- WIGGLE DESKEW -------------------------------------------------- */
+	/* --- DESKEW -------------------------------------------------- */
 	best_deskew = init_deskew = cfg.deskew;
 	least_errors = chunk.vpar_err_count;
 	if (cfg.deskew_auto) {
-		dbg << "deskew ";
-		for (int dir=1 ; dir>=-1 ; dir-=2) {
+		for (int dir=-1 ; dir<=1 ; dir+=2) {
 			for (int deskew=init_deskew ; (deskew>=cfg.bpl*0.2) && (deskew<=cfg.bpl*0.8) ; deskew+=dir) {
 				cfg.deskew = deskew;
-				dbg << cfg.deskew << " ";
+				qDebug() << "New deskew:" << cfg.deskew;
 				nrz1.process(chunk);
-				if (PROCESS_OK) goto fin;
-				if (chunk.vpar_err_count <= least_errors) {
+				qDebug() << "Verrors: " << chunk.vpar_err_count << "(" << chunk.vpar_err_count*100/(chunk.bytes+1) << "%) Herrors:" << chunk.hpar_err << "CRC ok?" << (chunk.crc_tape == chunk.crc_data);
+				if (PROCESS_OK) {
+					goto fin;
+				} else if ((chunk.vpar_err_count <= least_errors) || (chunk.vpar_err_count == chunk.hpar_err_count)) {
 					least_errors = chunk.vpar_err_count;
 					best_deskew = cfg.deskew;
 				} else {
+					cfg.deskew -= dir;
 					break;
 				}
 			}
 			init_deskew--;
 		}
 		cfg.deskew = best_deskew;
+		qDebug() << "Using best deskew:" << best_deskew;
+		if (!(PROCESS_OK)) {
+			nrz1.process(chunk);
+		}
 	}
 
 fin:
 
+	bitFix(chunk);
+
 	chunk.cfg = cfg;
 
 	int ms = myTimer.elapsed();
+	qDebug() << "Final Verrors: " << chunk.vpar_err_count << "(" << chunk.vpar_err_count*100/(chunk.bytes+1) << "%) Herrors:" << chunk.hpar_err << "CRC ok?" << (chunk.crc_tape == chunk.crc_data);
 
-	dbg << "fin: " << ms << " ms";
+	qDebug() << "fin: " << ms << " ms";
 	return VT_OK;
+}
+
+// --------------------------------------------------------------------------
+void TapeDrive::bitFix(TapeChunk &chunk)
+{
+	if (chunk.vpar_err_count != 1) return;
+	if (chunk.hpar_err_count != 1) return;
+
+	for (int i=0 ; i<chunk.bytes ; i++) {
+		int vp = !(parity9(chunk.data[i]) ^ (chunk.data[i]>>8));
+		if (vp) {
+			chunk.data[i] ^= chunk.hpar_err;
+			qDebug() << "Fixed one-bit parity error";
+		}
+	}
+
+	chunk.crc_data = nrz1.crc(chunk.data, chunk.bytes);
+	if (chunk.crc_data == chunk.crc_tape) chunk.fixed = 1;
 }
 
 // vim: tabstop=4 shiftwidth=4 autoindent

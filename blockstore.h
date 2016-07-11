@@ -36,14 +36,15 @@ public:
 	long end;					// end (samples into tape)
 	long len;					// length (samples)
 
-	quint8 *data;				// data
-	quint8 *vparity;			// parity
+	quint16 *data;				// data
 	int bytes;					// data length (bytes)
 
 	int crc_tape, crc_data;		// hparity (on tape, calculated)
+	int fixed;					// has the chunk been fixed?
 	int hpar_err;				// hparity mismatches
 	int hpar_tape, hpar_data;	// crc (on tape, calculated)
 	int vpar_err_count;			// number of vparity errors
+	int hpar_err_count;			// number of hparity errors
 
 	QList<TapeEvent> events;
 	TDConf cfg;

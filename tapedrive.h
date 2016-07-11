@@ -73,6 +73,7 @@ public:
 	int get_pos() { return pos; }
 
 	TapeChunk scan_next_chunk(int start);
+	void bitFix(TapeChunk &chunk);
 	int process(TapeChunk &chunk);
 
 };

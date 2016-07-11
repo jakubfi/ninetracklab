@@ -11,6 +11,7 @@ eksport pliku
 
 UI:
 
+pytanie czy na pewno chcesz reprocesować całą taśmę
 dialogi progress
 poprawić przesunięcie w rysowaniu eventów (ujednolicić wykrywanie krawędzi widok/read()?)
 podłączyć pasek przewijania do końca

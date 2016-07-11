@@ -66,7 +66,6 @@ void NineTrackLab::updateUiFromConfig(TDConf &config)
 // -----------------------------------------------------------------------
 void NineTrackLab::updateChunkList()
 {
-//	int cnt = 0;
 	int current_idx = -1;
 	if (ui->chunks->currentIndex().isValid()) {
 		current_idx = ui->chunks->currentIndex().row();
@@ -115,6 +114,8 @@ void NineTrackLab::updateChunkList()
 		if (i.value().type == C_BLOCK) {
 			if ((i.value().crc_tape == i.value().crc_data) && (i.value().hpar_tape == i.value().hpar_data)) {
 				color = QColor(220, 255, 220);
+			} else if (i.value().fixed) {
+				color = QColor(255, 255, 200);
 			} else {
 				errors++;
 				color = QColor(255, 220, 220);
@@ -129,13 +130,6 @@ void NineTrackLab::updateChunkList()
 		item->setBackgroundColor(color);
 		ui->chunks->addItem(item);
 		chunkstart.append(i.value().beg);
-/*
-		QFile out(QString("blk") + QString::number(cnt));
-		out.open(QIODevice::WriteOnly);
-		out.write((const char*)i.value().data, i.value().bytes);
-		out.close();
-		cnt++;
-*/
 	}
 	ui->chunks->setCurrentRow(current_idx);
 	QString status = QString("%1 chunks, %2 blocks, %3 marks, %4 errors, %5 unknown").arg(chunks).arg(blocks).arg(marks).arg(errors).arg(chunks-blocks-marks);
@@ -168,6 +162,37 @@ void NineTrackLab::on_action_Save_View_As_triggered()
 	QString fileName = QFileDialog::getSaveFileName(this, tr("Save tape image cut"), "", tr("Binary files (*.bin);;All files (*)"));
 	if (!fileName.isEmpty()) {
 		td.exportCut(fileName, ui->tapeview->leftSample(), ui->tapeview->rightSample());
+	}
+}
+
+// -----------------------------------------------------------------------
+void NineTrackLab::on_actionExport_blocks_triggered()
+{
+	int cnt = 0;
+	char buf[16*1024];
+	QMap<unsigned, TapeChunk>::iterator i;
+	for (i=bs.begin() ; i!=bs.end() ; i++) {
+		if (i.value().type == C_NONE) continue;
+		QString filename = QString("blk_%1_%2").arg(cnt, 4, 10, QChar('0')).arg(i.value().beg);
+		if (i.value().type == C_MARK) {
+			filename += ".mrk";
+		} else if (i.value().type == C_BLOCK) {
+			if (i.value().crc_data == i.value().crc_tape) {
+				filename += ".blk";
+			} else {
+				filename += "_crc.blk";
+			}
+		} else {
+			filename += "___";
+		}
+		for (int p=0 ; p<i.value().bytes ; p++) {
+			buf[p] = i.value().data[p];
+		}
+		QFile out(filename);
+		out.open(QIODevice::WriteOnly);
+		out.write((const char*)buf, i.value().bytes);
+		out.close();
+		cnt++;
 	}
 }
 
@@ -331,3 +356,5 @@ void NineTrackLab::on_deskew_auto_toggled(bool checked)
 }
 
 // vim: tabstop=4 shiftwidth=4 autoindent
+
+

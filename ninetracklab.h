@@ -47,6 +47,8 @@ private slots:
 	void on_chunks_activated(const QModelIndex &index);
 	void on_deskew_auto_toggled(bool checked);
 
+	void on_actionExport_blocks_triggered();
+
 public:
 	explicit NineTrackLab(QWidget *parent = 0);
 	~NineTrackLab();
